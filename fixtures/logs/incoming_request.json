@@ -1,0 +1,16 @@
+{
+  "method": "POST",
+  "path": "/v1/responses",
+  "headers": {
+    "host": "localhost:3333",
+    "content-type": "application/json",
+    "content-length": "220",
+    "accept": "application/json",
+    "originator": "codex_vscode",
+    "chatgpt-account-id": "[redacted]",
+    "authorization": "[redacted]",
+    "user-agent": "[redacted]",
+    "x-forwarded-for": "[redacted]"
+  },
+  "body": "{\n  \"model\": \"gpt-4.1-mini\",\n  \"input\": [\n    {\n      \"role\": \"user\",\n      \"content\": [\n        {\n          \"type\": \"input_text\",\n          \"text\": \"Im writing this message to see the logs.\"\n        }\n      ]\n    }\n  ],\n  \"stream\": false\n}"
+}

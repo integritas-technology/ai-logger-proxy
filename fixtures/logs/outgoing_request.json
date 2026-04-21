@@ -1,0 +1,20 @@
+{
+  "method": "POST",
+  "target": "https://api.openai.com/v1/responses",
+  "headers": {
+    "x-forwarded-host": "localhost:3333",
+    "x-forwarded-proto": "http",
+    "x-forwarded-port": "3333",
+    "x-forwarded-for": "[redacted]",
+    "host": "api.openai.com",
+    "originator": "codex_vscode",
+    "user-agent": "[redacted]",
+    "accept": "application/json",
+    "content-type": "application/json",
+    "content-length": "220",
+    "chatgpt-account-id": "[redacted]",
+    "authorization": "[redacted]",
+    "connection": "close"
+  },
+  "body": "{\n  \"model\": \"gpt-4.1-mini\",\n  \"input\": [\n    {\n      \"role\": \"user\",\n      \"content\": [\n        {\n          \"type\": \"input_text\",\n          \"text\": \"Im writing this message to see the logs.\"\n        }\n      ]\n    }\n  ],\n  \"stream\": false\n}"
+}
