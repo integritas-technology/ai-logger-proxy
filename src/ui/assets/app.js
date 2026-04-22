@@ -421,7 +421,7 @@ async function loadTestingPage() {
   });
 }
 
-function renderHistoryRow(row) {
+function renderHistoryRow(row, isSelected = false) {
   const requestValue = encodeURIComponent(formatBodyContent(row.request?.body));
   const responseValue = encodeURIComponent(formatBodyContent(row.response?.body));
   const { proof, proofUid, proofStatus, proofError, ...rowWithoutProof } = row;
@@ -433,7 +433,18 @@ function renderHistoryRow(row) {
   const hasProofError = Boolean(row.proofError);
 
   return `
-    <tr>
+    <tr class="${isSelected ? 'history-row-selected' : ''}" data-history-row-id="${escapeHtml(String(row.id || ''))}">
+      <td>
+        <label class="history-select-control">
+          <input
+            type="checkbox"
+            class="history-row-select"
+            data-row-id="${escapeHtml(String(row.id || ''))}"
+            ${isSelected ? 'checked' : ''}
+          >
+          <span class="history-select-indicator" aria-hidden="true"></span>
+        </label>
+      </td>
       <td>${escapeHtml(new Date(row.timestamp).toLocaleString())}</td>
       <td>${escapeHtml(provider || '')}</td>
       <td>${escapeHtml(model || '')}</td>
@@ -500,9 +511,45 @@ async function loadHistoryPage() {
   const historyDateTo = document.getElementById('history-date-to');
   const historySearchButton = document.getElementById('history-search-button');
   const historyClearButton = document.getElementById('history-clear-button');
+  const historyVerifyAllButton = document.getElementById('history-verify-all');
   let loadedRows = [];
+  let filteredRows = [];
+  const selectedRowIds = new Set();
+
+  function getActiveHistoryRows() {
+    const selectedRows = filteredRows.filter((row) => selectedRowIds.has(String(row.id)));
+    return selectedRows.length ? selectedRows : filteredRows;
+  }
+
+  function updateHistoryBulkActionState() {
+    const selectedRows = filteredRows.filter((row) => selectedRowIds.has(String(row.id)));
+    const activeRows = selectedRows.length ? selectedRows : filteredRows;
+    const verifiableRows = activeRows.filter((row) => Boolean(row.proofStatus && row.proof));
+
+    if (historyVerifyAllButton) {
+      historyVerifyAllButton.textContent = selectedRows.length ? 'Verify selected' : 'Verify all';
+      historyVerifyAllButton.disabled = !verifiableRows.length;
+    }
+  }
 
   function bindHistoryButtons() {
+    historyList.querySelectorAll('.history-row-select').forEach((input) => {
+      input.addEventListener('change', () => {
+        const rowId = input.dataset.rowId || '';
+        if (!rowId) {
+          return;
+        }
+
+        if (input.checked) {
+          selectedRowIds.add(rowId);
+        } else {
+          selectedRowIds.delete(rowId);
+        }
+
+        renderFilteredHistory();
+      });
+    });
+
     historyList.querySelectorAll('.history-open-button').forEach((button) => {
       button.addEventListener('click', () => {
         modal?.open(
@@ -568,15 +615,25 @@ async function loadHistoryPage() {
       dateFrom: historyDateFrom.value,
       dateTo: historyDateTo.value
     };
-    const filteredRows = loadedRows.filter((row) => rowMatchesHistoryFilters(row, filters));
+    filteredRows = loadedRows.filter((row) => rowMatchesHistoryFilters(row, filters));
+    const visibleRowIds = new Set(filteredRows.map((row) => String(row.id)));
+    Array.from(selectedRowIds).forEach((rowId) => {
+      if (!visibleRowIds.has(rowId)) {
+        selectedRowIds.delete(rowId);
+      }
+    });
+
+    updateHistoryBulkActionState();
 
     if (!filteredRows.length) {
-      historyList.innerHTML = '<tr><td colspan="7" class="empty-state">No rows match the current filters.</td></tr>';
+      historyList.innerHTML = '<tr><td colspan="8" class="empty-state">No rows match the current filters.</td></tr>';
       setStatus(historyStatus, loadedRows.length ? 'No matching rows found.' : 'History loaded.');
       return;
     }
 
-    historyList.innerHTML = filteredRows.map(renderHistoryRow).join('');
+    historyList.innerHTML = filteredRows
+      .map((row) => renderHistoryRow(row, selectedRowIds.has(String(row.id))))
+      .join('');
     bindHistoryButtons();
     setStatus(historyStatus, `Showing ${filteredRows.length} of ${loadedRows.length} rows.`);
   }
@@ -586,9 +643,11 @@ async function loadHistoryPage() {
     const response = await fetch('/__admin/history?limit=50');
     const payload = await response.json();
     loadedRows = payload.rows || [];
+    selectedRowIds.clear();
 
     if (!loadedRows.length) {
-      historyList.innerHTML = '<tr><td colspan="7" class="empty-state">No saved AI communication yet.</td></tr>';
+      historyList.innerHTML = '<tr><td colspan="8" class="empty-state">No saved AI communication yet.</td></tr>';
+      updateHistoryBulkActionState();
       setStatus(historyStatus, 'History loaded.');
       return;
     }
@@ -608,6 +667,63 @@ async function loadHistoryPage() {
     historyDateFrom.value = '';
     historyDateTo.value = '';
     renderFilteredHistory();
+  });
+
+  historyVerifyAllButton?.addEventListener('click', async () => {
+    const targetRows = getActiveHistoryRows();
+    const proofs = targetRows.flatMap((row) => {
+      if (!row.proofStatus || !row.proof) {
+        return [];
+      }
+
+      try {
+        const parsed = typeof row.proof === 'string' ? JSON.parse(row.proof) : row.proof;
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    });
+
+    if (!proofs.length) {
+      setStatus(historyStatus, 'No verified proofs are available in the current target rows.', true);
+      return;
+    }
+
+    historyVerifyAllButton.disabled = true;
+    setStatus(historyStatus, `Verifying ${proofs.length} proof entries...`);
+
+    try {
+      const response = await fetch('/__admin/history/verify-all', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          rowIds: targetRows.map((row) => row.id),
+          proofs
+        })
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.responseBody || result.message || 'Verify all failed');
+      }
+
+      const downloadUrl = result?.data?.file?.download_url;
+      if (!downloadUrl) {
+        throw new Error('Verification succeeded but no download URL was returned.');
+      }
+
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.target = '_blank';
+      link.rel = 'noopener';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setStatus(historyStatus, `Verified ${proofs.length} proof entries.`);
+    } catch (error) {
+      setStatus(historyStatus, error.message, true);
+    } finally {
+      renderFilteredHistory();
+    }
   });
 
   await refreshHistory();

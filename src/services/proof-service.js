@@ -19,6 +19,24 @@ function buildRowHash(row) {
   return hashString(serializeHistoryRow(row));
 }
 
+function normalizeProofPayload(proof) {
+  let proofPayload = proof;
+
+  if (typeof proofPayload === "string") {
+    try {
+      proofPayload = JSON.parse(proofPayload);
+    } catch {
+      proofPayload = null;
+    }
+  }
+
+  if (!Array.isArray(proofPayload) || !proofPayload.length) {
+    return null;
+  }
+
+  return proofPayload;
+}
+
 function createProofService({ configService, historyService }) {
   let pollTimer = null;
   let pollInFlight = false;
@@ -203,17 +221,9 @@ function createProofService({ configService, historyService }) {
 
     const requestUrl =
       "https://integritas.technology/core/v1/verify/post-lite-pdf";
-    let proofPayload = row.proof;
+    const proofPayload = normalizeProofPayload(row.proof);
 
-    if (typeof proofPayload === "string") {
-      try {
-        proofPayload = JSON.parse(proofPayload);
-      } catch {
-        proofPayload = null;
-      }
-    }
-
-    if (!Array.isArray(proofPayload) || !proofPayload.length) {
+    if (!proofPayload) {
       const error = new Error("Stored proof is invalid.");
       error.statusCode = 400;
       throw error;
@@ -266,11 +276,80 @@ function createProofService({ configService, historyService }) {
     return parsed;
   }
 
+  async function verifyProofs(proofPayload, context = {}) {
+    const config = await configService.getResolvedConfig();
+    if (!config.integritasApiKey) {
+      const error = new Error("Integritas API key is not configured.");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    if (!Array.isArray(proofPayload) || !proofPayload.length) {
+      const error = new Error("No valid proofs were provided.");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const requestUrl =
+      "https://integritas.technology/core/v1/verify/post-lite-pdf";
+
+    logProofLifecycle("proof_verify_started", {
+      ...context,
+      target: requestUrl,
+      proofCount: proofPayload.length,
+    });
+
+    const response = await fetch(requestUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-request-id": "ai-logger",
+        "x-report-required": true,
+        "x-api-key": config.integritasApiKey,
+      },
+      body: JSON.stringify(proofPayload),
+    });
+
+    const responseText = await response.text();
+
+    let parsed = null;
+    try {
+      parsed = JSON.parse(responseText);
+    } catch {
+      parsed = responseText;
+    }
+
+    if (!response.ok) {
+      logProofLifecycle("proof_verify_error", {
+        ...context,
+        target: requestUrl,
+        proofCount: proofPayload.length,
+        statusCode: response.status,
+      });
+      const error = new Error(
+        `Proof verify failed with status ${response.status}`,
+      );
+      error.statusCode = response.status;
+      error.responseBody = responseText;
+      throw error;
+    }
+
+    logProofLifecycle("proof_verify_completed", {
+      ...context,
+      target: requestUrl,
+      proofCount: proofPayload.length,
+    });
+
+    return parsed;
+  }
+
   return {
     buildRowHash,
+    normalizeProofPayload,
     requestProofUid,
     serializeHistoryRow,
     startPolling,
+    verifyProofs,
     verifyRow,
   };
 }

@@ -87,7 +87,27 @@ function createAdminRouter({ configService, historyService, testService, modelsS
             error: 'history_load_failed',
             message: error.message
           });
-        });
+      });
+      return true;
+    }
+
+    if (requestUrl.pathname === '/__admin/history/verify-all' && req.method === 'POST') {
+      readJsonBody(req, res, (payload) => {
+        proofService.verifyProofs(payload?.proofs, {
+          source: 'bulk',
+          rowCount: Array.isArray(payload?.rowIds) ? payload.rowIds.length : 0
+        })
+          .then((result) => {
+            writeJson(res, 200, result);
+          })
+          .catch((error) => {
+            writeJson(res, error.statusCode || 502, {
+              error: 'proof_verify_failed',
+              message: error.message,
+              responseBody: error.responseBody || ''
+            });
+          });
+      });
       return true;
     }
 

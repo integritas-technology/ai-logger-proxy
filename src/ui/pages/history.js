@@ -12,11 +12,14 @@ function renderHistoryPage() {
         <div class="eyebrow">History</div>
         <h2>Saved AI communication</h2>
         <div class="toolbar">
-          <div class="inline-actions">
-            <button id="history-refresh" type="button">Refresh history</button>
-            <button id="history-clear-button" type="button">Clear filters</button>
+          <div class="toolbar-left">
+            <div class="inline-actions">
+              <button id="history-refresh" type="button">Refresh history</button>
+              <button id="history-clear-button" type="button">Clear filters</button>
+            </div>
+            <div class="status" id="history-status"></div>
           </div>
-          <div class="status" id="history-status"></div>
+          <button id="history-verify-all" type="button">Verify all</button>
         </div>
         <div class="history-filters">
           <label class="filter-field">From date
@@ -36,6 +39,7 @@ function renderHistoryPage() {
           <table class="history-table">
             <thead>
               <tr>
+                <th scope="col">Select</th>
                 <th scope="col">Timestamp</th>
                 <th scope="col">Provider</th>
                 <th scope="col">Model</th>
@@ -47,7 +51,7 @@ function renderHistoryPage() {
             </thead>
             <tbody id="history-list">
               <tr>
-                <td colspan="7" class="empty-state">Loading history...</td>
+                <td colspan="8" class="empty-state">Loading history...</td>
               </tr>
             </tbody>
           </table>
