@@ -1,56 +1,38 @@
 # AI Logger Proxy
 
-A local reverse proxy with request/response logging, a multi-page admin UI, and PostgreSQL-backed storage for both runtime config and AI traffic history.
+A local reverse proxy for LLM traffic with a browser admin UI and PostgreSQL-backed storage for runtime config and request history.
 
-It accepts HTTP requests on `localhost`, forwards them to the configured upstream API, and streams the upstream response back unchanged. Provider selection and API keys are managed through a local web interface instead of only through environment variables.
+It listens on `localhost`, forwards supported API requests to the currently selected upstream provider, and stores config plus AI communication history in PostgreSQL.
 
-## What it does
+## What It Does
 
-- Receives requests from a client such as Codex or any OpenAI-compatible caller.
-- Forwards those requests to the currently configured upstream base URL.
-- Lets you switch between `OpenAI`, `Anthropic Claude`, and `OpenRouter` from a local web app.
-- Stores the selected provider, base URL, API key, Anthropic version, and default model in PostgreSQL.
-- Redacts sensitive headers in logs while keeping request and response bodies visible.
-- Saves AI communication history to PostgreSQL with timestamp, LLM, full request blob, full response blob, and a `proof` field.
-- Returns the upstream response directly to the caller.
+- Proxies supported LLM API traffic through one local base URL.
+- Lets you switch between `OpenAI`, `Anthropic Claude`, and `OpenRouter` in the web UI.
+- Stores provider config in PostgreSQL instead of a local config file.
+- Saves AI communication history with request and response payloads plus a placeholder `proof` field.
+- Provides a testing page for live upstream checks.
+- Redacts sensitive headers in console logs.
 
-## Structure
+## Install
 
-- `src/server.js`: startup entry point.
-- `src/app.js`: app bootstrap.
-- `src/routes/`: page routes and admin API routes.
-- `src/services/`: config, proxy, test, and history services.
-- `src/db/`: PostgreSQL initialization.
-- `src/ui/`: frontend pages and static assets.
-- `Dockerfile`: container image definition.
-- `docker-compose.yml`: local Docker runtime.
-- `.env.example`: required environment variables.
+### Prerequisites
 
-## Providers
+- Docker
+- Docker Compose
 
-Built-in presets:
+### Local Install
 
-- `openai` -> `https://api.openai.com`
-- `anthropic` -> `https://api.anthropic.com`
-- `openrouter` -> `https://openrouter.ai/api`
+1. Copy the example environment file:
 
-Behavior:
+```bash
+cp .env.example .env
+```
 
-- `OpenAI` and `OpenRouter` use bearer auth and work with OpenAI-style endpoints such as `/v1/responses`.
-- `Anthropic` uses `x-api-key` and `anthropic-version` headers.
-- This proxy does not translate OpenAI request formats into Anthropic Messages API payloads. Anthropic support here is for forwarding Anthropic-style requests through the same proxy.
-
-## Configure
-
-Create a local `.env` file:
+2. Update `.env` if you want different defaults:
 
 ```env
 PORT=3333
-UPSTREAM_PROVIDER=openai
-UPSTREAM_BASE_URL=https://api.openai.com
-UPSTREAM_API_KEY=your_api_key_here
-ANTHROPIC_VERSION=2023-06-01
-UPSTREAM_DEFAULT_MODEL=
+CONFIG_ENCRYPTION_KEY=change-this-secret
 POSTGRES_DB=ai_logger_proxy
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=postgres
@@ -58,65 +40,81 @@ POSTGRES_PORT=5432
 DATABASE_URL=postgresql://postgres:postgres@postgres:5432/ai_logger_proxy
 ```
 
-The upstream environment variables above only provide startup defaults for the initial database seed. After the server is running, the active config is controlled through the UI and saved in PostgreSQL.
-
-## Logging
-
-The proxy logs to stdout and also stores AI communication in PostgreSQL.
-
-Stored row shape:
-
-- `timestamp`
-- `llm`
-- `request_json`
-- `response_json`
-- `proof`
-
-Console logging includes:
-
-- incoming client requests
-- outgoing upstream requests
-- incoming upstream responses
-- proxy and upstream response errors
-
-Request and response bodies are logged in full.
-Sensitive headers are redacted in logs, including `Authorization`, `x-api-key`, cookies, account identifiers, forwarded IPs, and selected request metadata such as `User-Agent`.
-
-Example log fixtures are available under `fixtures/logs/` for each emitted event type:
-
-- `incoming_request`
-- `outgoing_request`
-- `incoming_response`
-- `incoming_response_error`
-
-## Run
+3. Start the stack:
 
 ```bash
-cp .env.example .env
 docker compose up --build
 ```
 
-The proxy listens on:
-
-```text
-http://localhost:3333
-```
-
-Admin UI:
+4. Open the app:
 
 ```text
 http://localhost:3333/
 ```
 
-Health check:
+Provider config is no longer taken from environment variables. After startup, active provider settings are configured in the web UI and stored in PostgreSQL.
 
-```bash
-curl http://localhost:3333/healthz
+`CONFIG_ENCRYPTION_KEY` is used to encrypt the saved Integritas API key in the database. Keep it stable across restarts if you want previously saved encrypted values to remain readable.
+
+## First-Time Use
+
+1. Open `http://localhost:3333/config`
+2. Select a provider
+3. Enter the provider API key
+4. Refresh/select a model if needed
+5. Save config
+6. Run a live test in `http://localhost:3333/testing`
+
+## Client Setup
+
+Once the proxy is running, point your tools at:
+
+```text
+http://localhost:3333
 ```
 
-The health response includes the active provider and config file path.
+### Codex
 
-## Example request
+If your Codex build supports `chatgpt_base_url`:
+
+```toml
+chatgpt_base_url = "http://localhost:3333"
+```
+
+### Claude Code and Other OpenAI-Compatible Clients
+
+Use:
+
+- Base URL: `http://localhost:3333`
+- Example route: `/v1/chat/completions`
+
+Note: this proxy does not translate OpenAI payloads into Anthropic Messages API payloads. Anthropic support here is for forwarding Anthropic-style requests through the same proxy.
+
+## Supported Providers
+
+- `openai` -> `https://api.openai.com`
+- `anthropic` -> `https://api.anthropic.com`
+- `openrouter` -> `https://openrouter.ai/api`
+
+Behavior:
+
+- `OpenAI` and `OpenRouter` use bearer auth and OpenAI-style routes.
+- `Anthropic` uses `x-api-key` and `anthropic-version`.
+
+## API Endpoints
+
+Admin endpoints:
+
+- `GET /__admin/config`
+- `POST /__admin/config`
+- `POST /__admin/models`
+- `POST /__admin/test`
+- `GET /__admin/history?limit=50`
+- `GET /healthz`
+
+Proxy routes are intentionally guarded. Supported API traffic is proxied only for allowed prefixes such as `/v1/...`.
+
+## Example Proxy Request
 
 ```bash
 curl http://localhost:3333/v1/chat/completions \
@@ -129,33 +127,39 @@ curl http://localhost:3333/v1/chat/completions \
   }'
 ```
 
-## Web App
+## Logging and History
 
-Pages:
+Console logs include lifecycle and proxy events such as:
 
-- `Home`: overview of available sections.
-- `Config`: change provider settings stored in PostgreSQL.
-- `Setup`: explains how the app works and how to point tools at it.
-- `Testing`: run a live provider test from the browser.
-- `History`: inspect saved AI communication rows.
+- incoming client requests
+- outgoing upstream requests
+- incoming upstream responses
+- model refresh start/success/error
+- AI request start/success/error
 
-Changes apply immediately to new requests. No restart is required.
+Sensitive headers such as `Authorization` and `x-api-key` are redacted.
 
-If `default model` is set, the proxy injects it only for JSON requests whose body does not already include `model`.
+Stored history rows contain:
 
-## Using it with Codex
+- `timestamp`
+- `llm`
+- `request_json`
+- `response_json`
+- `proof`
 
-If your Codex build supports `chatgpt_base_url`, point it at the proxy:
+## Project Structure
 
-```toml
-chatgpt_base_url = "http://localhost:3333"
-```
-
-Then restart Codex.
+- `src/server.js`: startup entry point
+- `src/app.js`: app bootstrap
+- `src/routes/`: page and admin API routes
+- `src/services/`: config, models, proxy, test, and history services
+- `src/db/`: PostgreSQL initialization
+- `src/ui/`: frontend pages and shared assets
+- `docker-compose.yml`: local runtime with Postgres
+- `Dockerfile`: app image
 
 ## Notes
 
 - This is a transparent forwarding proxy, not a custom LLM server.
-- It does not transform the request body or response body.
-- It logs requests and responses to stdout.
-- The saved runtime config and history are stored in PostgreSQL.
+- Requests and responses are not transformed except for optional default-model injection.
+- Runtime config and history are stored in PostgreSQL.

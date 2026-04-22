@@ -2,7 +2,7 @@
 
 const { readJsonBody, writeJson } = require('../lib/http');
 
-function createAdminRouter({ configService, historyService, testService, modelsService }) {
+function createAdminRouter({ configService, historyService, testService, modelsService, proofService }) {
   return function routeAdmin(req, res) {
     const requestUrl = new URL(req.url, 'http://localhost');
 
@@ -86,6 +86,34 @@ function createAdminRouter({ configService, historyService, testService, modelsS
           writeJson(res, 500, {
             error: 'history_load_failed',
             message: error.message
+          });
+        });
+      return true;
+    }
+
+    const verifyMatch = requestUrl.pathname.match(/^\/__admin\/history\/(\d+)\/verify$/);
+    if (verifyMatch && req.method === 'POST') {
+      const rowId = Number.parseInt(verifyMatch[1], 10);
+      historyService.getHistoryRow(rowId)
+        .then((row) => {
+          if (!row) {
+            writeJson(res, 404, {
+              error: 'history_row_not_found',
+              message: 'History row not found.'
+            });
+            return null;
+          }
+
+          return proofService.verifyRow(row)
+            .then((result) => {
+              writeJson(res, 200, result);
+            });
+        })
+        .catch((error) => {
+          writeJson(res, error.statusCode || 502, {
+            error: 'proof_verify_failed',
+            message: error.message,
+            responseBody: error.responseBody || ''
           });
         });
       return true;

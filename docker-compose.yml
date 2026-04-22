@@ -25,11 +25,7 @@ services:
       - "${PORT:-3333}:3333"
     environment:
       PORT: 3333
-      UPSTREAM_PROVIDER: ${UPSTREAM_PROVIDER:-openai}
-      UPSTREAM_BASE_URL: ${UPSTREAM_BASE_URL:-https://api.openai.com}
-      UPSTREAM_API_KEY: ${UPSTREAM_API_KEY:-}
-      ANTHROPIC_VERSION: ${ANTHROPIC_VERSION:-2023-06-01}
-      UPSTREAM_DEFAULT_MODEL: ${UPSTREAM_DEFAULT_MODEL:-}
+      CONFIG_ENCRYPTION_KEY: ${CONFIG_ENCRYPTION_KEY:-change-this-secret}
       DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/ai_logger_proxy}
 
 volumes:

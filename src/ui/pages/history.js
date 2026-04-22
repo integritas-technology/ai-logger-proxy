@@ -12,24 +12,24 @@ function renderHistoryPage() {
         <div class="eyebrow">History</div>
         <h2>Saved AI communication</h2>
         <div class="toolbar">
-          <button id="history-refresh" type="button">Refresh history</button>
+          <div class="inline-actions">
+            <button id="history-refresh" type="button">Refresh history</button>
+            <button id="history-clear-button" type="button">Clear filters</button>
+          </div>
           <div class="status" id="history-status"></div>
         </div>
         <div class="history-filters">
-          <div class="search-field-group">
-            <label class="filter-field">Search
-              <input id="history-search" type="search" placeholder="Search request or response body">
-            </label>
-            <button id="history-search-button" type="button">Search</button>
-          </div>
           <label class="filter-field">From date
             <input id="history-date-from" type="date">
           </label>
           <label class="filter-field">To date
             <input id="history-date-to" type="date">
           </label>
-          <div class="inline-actions">
-            <button id="history-clear-button" type="button">Clear filters</button>
+          <div class="search-field-group">
+            <label class="filter-field">Search
+              <input id="history-search" type="search" placeholder="Search request or response body">
+            </label>
+            <button id="history-search-button" type="button">Search</button>
           </div>
         </div>
         <div class="history-table-wrap">
@@ -39,14 +39,15 @@ function renderHistoryPage() {
                 <th scope="col">Timestamp</th>
                 <th scope="col">Provider</th>
                 <th scope="col">Model</th>
-                <th scope="col">Proof</th>
                 <th scope="col">Request</th>
                 <th scope="col">Response</th>
+                <th scope="col">Create file</th>
+                <th scope="col">Proof</th>
               </tr>
             </thead>
             <tbody id="history-list">
               <tr>
-                <td colspan="6" class="empty-state">Loading history...</td>
+                <td colspan="7" class="empty-state">Loading history...</td>
               </tr>
             </tbody>
           </table>

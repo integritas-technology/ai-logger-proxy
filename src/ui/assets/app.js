@@ -98,14 +98,54 @@ async function loadConfigPage() {
   const defaultModelManualGroup = document.getElementById('default-model-manual-group');
   const defaultModelInput = document.getElementById('defaultModel');
   const refreshModelsButton = document.getElementById('refresh-models-button');
+  const stampLogsInput = document.getElementById('stampLogs');
+  const cloudStorageLogsInput = document.getElementById('cloudStorageLogs');
+  const notarizeLogsInput = document.getElementById('notarizeLogs');
+  const integritasApiKeyGroup = document.getElementById('integritas-api-key-group');
+  const integritasApiKeyInput = document.getElementById('integritasApiKey');
   const modelsStatus = document.getElementById('models-status');
   const preview = document.getElementById('config-preview');
   const status = document.getElementById('status');
   const saveButton = document.getElementById('save-button');
   let availableModels = [];
+  let savedApiKeyConfigured = false;
+  let savedApiKeyPreview = '';
+  let savedIntegritasApiKeyConfigured = false;
+  let savedIntegritasApiKeyPreview = '';
+
+  function buildCurrentState() {
+    return {
+      provider: providerInput.value,
+      baseUrl: baseUrlInput.value,
+      anthropicVersion: anthropicVersionInput.value,
+      defaultModel: defaultModelSelect.value === '__custom__'
+        ? defaultModelInput.value.trim()
+        : defaultModelSelect.value,
+      apiKeyConfigured: savedApiKeyConfigured || Boolean(apiKeyInput.value.trim()),
+      apiKeyPreview: apiKeyInput.value.trim() ? 'Updated on save' : savedApiKeyPreview,
+      stampLogs: stampLogsInput.checked,
+      cloudStorageLogs: Boolean(cloudStorageLogsInput?.checked),
+      notarizeLogs: Boolean(notarizeLogsInput?.checked),
+      integritasApiKeyConfigured: stampLogsInput.checked
+        ? (savedIntegritasApiKeyConfigured || Boolean(integritasApiKeyInput.value.trim()))
+        : false,
+      integritasApiKeyPreview: stampLogsInput.checked
+        ? (integritasApiKeyInput.value.trim() ? 'Updated on save' : savedIntegritasApiKeyPreview)
+        : ''
+    };
+  }
+
+  function updateCurrentStatePreview() {
+    preview.textContent = formatJson(buildCurrentState());
+  }
 
   function showManualModelInput(visible) {
     defaultModelManualGroup.classList.toggle('hidden', !visible);
+  }
+
+  function updateStampFields() {
+    integritasApiKeyGroup.classList.toggle('hidden', !stampLogsInput.checked);
+    updateCurrentStatePreview();
   }
 
   function populateModelOptions(models, selectedModel = '') {
@@ -117,6 +157,7 @@ async function loadConfigPage() {
     if (selectedModel && models.some((model) => model.id === selectedModel)) {
       defaultModelSelect.value = selectedModel;
       showManualModelInput(false);
+      updateCurrentStatePreview();
       return;
     }
 
@@ -124,11 +165,13 @@ async function loadConfigPage() {
       defaultModelSelect.value = '__custom__';
       defaultModelInput.value = selectedModel;
       showManualModelInput(true);
+      updateCurrentStatePreview();
       return;
     }
 
     defaultModelSelect.value = '';
     showManualModelInput(false);
+    updateCurrentStatePreview();
   }
 
   async function refreshModels(selectedModel = '') {
@@ -196,17 +239,31 @@ async function loadConfigPage() {
     }
 
     updateProviderFields(providerInput.value);
+    updateCurrentStatePreview();
     refreshModels(defaultModelInput.value.trim()).catch(() => {});
   });
 
   defaultModelSelect.addEventListener('change', () => {
     if (defaultModelSelect.value === '__custom__') {
       showManualModelInput(true);
+      updateCurrentStatePreview();
       return;
     }
 
     showManualModelInput(false);
     defaultModelInput.value = defaultModelSelect.value;
+    updateCurrentStatePreview();
+  });
+
+  stampLogsInput.addEventListener('change', updateStampFields);
+  [
+    baseUrlInput,
+    apiKeyInput,
+    anthropicVersionInput,
+    defaultModelInput,
+    integritasApiKeyInput
+  ].forEach((input) => {
+    input.addEventListener('input', updateCurrentStatePreview);
   });
 
   refreshModelsButton.addEventListener('click', () => {
@@ -222,8 +279,21 @@ async function loadConfigPage() {
   baseUrlInput.value = config.baseUrl;
   anthropicVersionInput.value = config.anthropicVersion || presets.anthropic.anthropicVersion;
   defaultModelInput.value = config.defaultModel || '';
-  preview.textContent = formatJson(config);
+  stampLogsInput.checked = Boolean(config.stampLogs);
+  if (cloudStorageLogsInput) {
+    cloudStorageLogsInput.checked = Boolean(config.cloudStorageLogs);
+  }
+  if (notarizeLogsInput) {
+    notarizeLogsInput.checked = Boolean(config.notarizeLogs);
+  }
+  integritasApiKeyInput.value = '';
+  savedApiKeyConfigured = Boolean(config.apiKeyConfigured);
+  savedApiKeyPreview = config.apiKeyPreview || '';
+  savedIntegritasApiKeyConfigured = Boolean(config.integritasApiKeyConfigured);
+  savedIntegritasApiKeyPreview = config.integritasApiKeyPreview || '';
   updateProviderFields(config.provider);
+  updateStampFields();
+  updateCurrentStatePreview();
   await refreshModels(config.defaultModel || '');
 
   form.addEventListener('submit', async (event) => {
@@ -237,11 +307,18 @@ async function loadConfigPage() {
       anthropicVersion: anthropicVersionInput.value,
       defaultModel: defaultModelSelect.value === '__custom__'
         ? defaultModelInput.value
-        : defaultModelSelect.value
+        : defaultModelSelect.value,
+      stampLogs: stampLogsInput.checked,
+      cloudStorageLogs: Boolean(cloudStorageLogsInput?.checked),
+      notarizeLogs: Boolean(notarizeLogsInput?.checked)
     };
 
     if (apiKeyInput.value.trim()) {
       nextConfig.apiKey = apiKeyInput.value.trim();
+    }
+
+    if (integritasApiKeyInput.value.trim()) {
+      nextConfig.integritasApiKey = integritasApiKeyInput.value.trim();
     }
 
     try {
@@ -257,9 +334,23 @@ async function loadConfigPage() {
       }
 
       apiKeyInput.value = '';
+      integritasApiKeyInput.value = '';
+      savedApiKeyConfigured = Boolean(result.config.apiKeyConfigured);
+      savedApiKeyPreview = result.config.apiKeyPreview || '';
+      savedIntegritasApiKeyConfigured = Boolean(result.config.integritasApiKeyConfigured);
+      savedIntegritasApiKeyPreview = result.config.integritasApiKeyPreview || '';
       preview.textContent = formatJson(result.config);
       setStatus(status, 'Saved. New requests will use this config immediately.');
       defaultModelInput.value = result.config.defaultModel || '';
+      stampLogsInput.checked = Boolean(result.config.stampLogs);
+      if (cloudStorageLogsInput) {
+        cloudStorageLogsInput.checked = Boolean(result.config.cloudStorageLogs);
+      }
+      if (notarizeLogsInput) {
+        notarizeLogsInput.checked = Boolean(result.config.notarizeLogs);
+      }
+      updateStampFields();
+      updateCurrentStatePreview();
       await refreshModels(result.config.defaultModel || '');
     } catch (error) {
       setStatus(status, error.message, true);
@@ -333,20 +424,36 @@ async function loadTestingPage() {
 function renderHistoryRow(row) {
   const requestValue = encodeURIComponent(formatBodyContent(row.request?.body));
   const responseValue = encodeURIComponent(formatBodyContent(row.response?.body));
+  const { proof, proofUid, proofStatus, proofError, ...rowWithoutProof } = row;
+  const rowValue = encodeURIComponent(`${formatJson(rowWithoutProof)}\n`);
   const provider = row.request?.provider || row.response?.provider || '';
   const model = row.request?.body?.model || row.response?.body?.model || '';
+  const hasProof = Boolean(row.proofStatus && row.proof);
+  const isPendingProof = Boolean(row.proofUid) && !row.proofStatus;
+  const hasProofError = Boolean(row.proofError);
 
   return `
     <tr>
       <td>${escapeHtml(new Date(row.timestamp).toLocaleString())}</td>
       <td>${escapeHtml(provider || '')}</td>
       <td>${escapeHtml(model || '')}</td>
-      <td>${escapeHtml(row.proof || '(blank)')}</td>
       <td>
-        <button type="button" class="history-open-button" data-modal-title="Raw request body" data-modal-kicker="History" data-modal-content="${requestValue}">Raw Request Body</button>
+        <button type="button" class="history-open-button history-pill-button" data-modal-title="Raw request body" data-modal-kicker="History" data-modal-content="${requestValue}">Raw Request Body</button>
       </td>
       <td>
-        <button type="button" class="history-open-button" data-modal-title="Raw response body" data-modal-kicker="History" data-modal-content="${responseValue}">Raw Response Body</button>
+        <button type="button" class="history-open-button history-pill-button" data-modal-title="Raw response body" data-modal-kicker="History" data-modal-content="${responseValue}">Raw Response Body</button>
+      </td>
+      <td>
+        <button type="button" class="history-download-button history-pill-button" data-row-id="${escapeHtml(String(row.id || 'row'))}" data-file-content="${rowValue}">Create file</button>
+      </td>
+      <td>
+        ${hasProof
+          ? `<button type="button" class="history-verify-button history-pill-button" data-row-id="${escapeHtml(String(row.id || 'row'))}">Verify</button>`
+          : (hasProofError
+              ? `<span class="history-failed-pill" title="${escapeHtml(row.proofError)}">Failed</span>`
+              : (isPendingProof
+              ? '<span class="history-pending-pill">Pending</span>'
+              : '<span class="history-na-pill">N/A</span>'))}
       </td>
     </tr>
   `;
@@ -405,6 +512,54 @@ async function loadHistoryPage() {
         );
       });
     });
+
+    historyList.querySelectorAll('.history-download-button').forEach((button) => {
+      button.addEventListener('click', () => {
+        const rowId = button.dataset.rowId || 'row';
+        const fileContent = decodeURIComponent(button.dataset.fileContent || '');
+        const blob = new Blob([fileContent], { type: 'application/json;charset=utf-8' });
+        const downloadUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = `ai-log-row-${rowId}.json`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(downloadUrl);
+      });
+    });
+
+    historyList.querySelectorAll('.history-verify-button').forEach((button) => {
+      button.addEventListener('click', async () => {
+        const rowId = button.dataset.rowId;
+        button.disabled = true;
+        try {
+          const response = await fetch(`/__admin/history/${rowId}/verify`, {
+            method: 'POST'
+          });
+          const result = await response.json();
+          if (!response.ok) {
+            throw new Error(result.responseBody || result.message || 'Verify failed');
+          }
+          const downloadUrl = result?.data?.file?.download_url;
+          if (!downloadUrl) {
+            throw new Error('Verification succeeded but no download URL was returned.');
+          }
+
+          const link = document.createElement('a');
+          link.href = downloadUrl;
+          link.target = '_blank';
+          link.rel = 'noopener';
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+        } catch (error) {
+          setStatus(historyStatus, error.message, true);
+        } finally {
+          button.disabled = false;
+        }
+      });
+    });
   }
 
   function renderFilteredHistory() {
@@ -416,7 +571,7 @@ async function loadHistoryPage() {
     const filteredRows = loadedRows.filter((row) => rowMatchesHistoryFilters(row, filters));
 
     if (!filteredRows.length) {
-      historyList.innerHTML = '<tr><td colspan="6" class="empty-state">No rows match the current filters.</td></tr>';
+      historyList.innerHTML = '<tr><td colspan="7" class="empty-state">No rows match the current filters.</td></tr>';
       setStatus(historyStatus, loadedRows.length ? 'No matching rows found.' : 'History loaded.');
       return;
     }
@@ -433,7 +588,7 @@ async function loadHistoryPage() {
     loadedRows = payload.rows || [];
 
     if (!loadedRows.length) {
-      historyList.innerHTML = '<tr><td colspan="6" class="empty-state">No saved AI communication yet.</td></tr>';
+      historyList.innerHTML = '<tr><td colspan="7" class="empty-state">No saved AI communication yet.</td></tr>';
       setStatus(historyStatus, 'History loaded.');
       return;
     }

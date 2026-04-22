@@ -1,16 +1,17 @@
-'use strict';
+"use strict";
 
-const { renderLayout } = require('./layout');
+const { renderLayout } = require("./layout");
 
 function renderConfigPage() {
   return renderLayout({
-    page: '/config',
-    title: 'Config',
-    intro: 'Configuration is now stored in PostgreSQL and applied on the next request without a restart.',
+    page: "/config",
+    title: "Config",
+    intro:
+      "Configuration is now stored in PostgreSQL and applied on the next request without a restart.",
     content: `
-      <section class="panel two-column">
+      <section class="panel config-layout">
         <article class="panel-section">
-          <div class="eyebrow">Config</div>
+          <div class="eyebrow">Normal Config</div>
           <h2>Update runtime settings</h2>
           <form id="config-form" class="stack">
             <label>Active provider
@@ -50,11 +51,67 @@ function renderConfigPage() {
           <h2>Saved config snapshot</h2>
           <pre id="config-preview">Loading...</pre>
         </article>
+        <details class="panel-section config-addons">
+          <summary class="config-addons-summary">
+            <div>
+              <div class="eyebrow">Optional Addons</div>
+              <h2>Check the box to opt in.</h2>
+            </div>
+            <span class="config-addons-toggle">
+              <span class="config-addons-toggle-icon" aria-hidden="true"></span>
+              <span class="config-addons-toggle-label">Expand</span>
+            </span>
+          </summary>
+          <div class="stack config-addons-body">
+            <section class="addon-card">
+              <div class="addon-copy">
+                <h3>I want to stamp my logs</h3>
+                <p>Generate a proof workflow for each saved log and track its proof state over time.</p>
+              </div>
+              <label class="addon-control">
+                <input id="stampLogs" name="stampLogs" type="checkbox">
+                <span class="addon-pill" aria-hidden="true"></span>
+                <span class="sr-only">Toggle stamp my logs</span>
+              </label>
+              <div id="integritas-api-key-group" class="hidden addon-fields">
+                <p class="hint">
+                  Get Your Integritas API key here:
+                  <a href="https://integritas.technology/" target="_blank" rel="noreferrer">https://integritas.technology/</a>
+                </p>
+                <label>Integritas API key
+                  <input id="integritasApiKey" name="integritasApiKey" type="password" placeholder="Leave unchanged to keep the saved key">
+                </label>
+              </div>
+            </section>
+            <section class="addon-card is-disabled">
+              <div class="addon-copy">
+                <h3>I want cloud storage of my logs</h3>
+                <p>Not yet available.</p>
+              </div>
+              <label class="addon-control">
+                <input id="cloudStorageLogs" name="cloudStorageLogs" type="checkbox" disabled>
+                <span class="addon-pill" aria-hidden="true"></span>
+                <span class="sr-only">Cloud storage of logs is not yet available</span>
+              </label>
+            </section>
+            <section class="addon-card is-disabled">
+              <div class="addon-copy">
+                <h3>I want my logs notarized</h3>
+                <p>Not yet available.</p>
+              </div>
+              <label class="addon-control">
+                <input id="notarizeLogs" name="notarizeLogs" type="checkbox" disabled>
+                <span class="addon-pill" aria-hidden="true"></span>
+                <span class="sr-only">Log notarization is not yet available</span>
+              </label>
+            </section>
+          </div>
+        </details>
       </section>
-    `
+    `,
   });
 }
 
 module.exports = {
-  renderConfigPage
+  renderConfigPage,
 };

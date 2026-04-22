@@ -185,7 +185,7 @@ function createTestService({ configService, historyService }) {
       statusCode: result.statusCode
     });
 
-    await historyService.saveCommunication({
+    const savedRow = await historyService.saveCommunication({
       timestamp: result.completedAt,
       llm: inferenceRequest.model,
       request: {
@@ -200,8 +200,15 @@ function createTestService({ configService, historyService }) {
         statusCode: result.statusCode,
         ...result.response
       },
-      proof: ''
+      proof: '',
+      awaitProofAttempt: true
     });
+
+    result.proof = savedRow.proofStatus
+      ? 'Verified'
+      : (savedRow.proofError
+          ? 'Failed'
+          : (savedRow.proofUid ? 'Pending' : '(blank)'));
 
     return result;
   }

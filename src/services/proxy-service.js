@@ -14,6 +14,7 @@ const {
   writeJson
 } = require('../lib/http');
 const { createHistoryService } = require('./history-service');
+const { createProofService } = require('./proof-service');
 const { createTestService, resolveUpstream } = require('./test-service');
 
 const proxiedPathPrefixes = [
@@ -114,6 +115,8 @@ function decorateProxyRequest(proxyReq, req, config) {
 
 function createProxyServer({ db, configService }) {
   const historyService = createHistoryService(db);
+  const proofService = createProofService({ configService, historyService });
+  historyService.setProofService(proofService);
   const testService = createTestService({ configService, historyService });
   const proxy = httpProxy.createProxyServer({
     changeOrigin: true,
@@ -374,6 +377,7 @@ function createProxyServer({ db, configService }) {
     handleHttp,
     handleUpgrade,
     historyService,
+    proofService,
     testService
   };
 }

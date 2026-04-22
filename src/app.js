@@ -15,9 +15,11 @@ async function createAppServer() {
   const configService = createConfigService(db);
   const modelsService = createModelsService({ configService });
   const proxyService = createProxyServer({ db, configService });
+  proxyService.proofService.startPolling();
   const adminRouter = createAdminRouter({
     configService,
     historyService: proxyService.historyService,
+    proofService: proxyService.proofService,
     testService: proxyService.testService,
     modelsService
   });

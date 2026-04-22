@@ -6,27 +6,31 @@ function renderSetupPage() {
   return renderLayout({
     page: '/setup',
     title: 'Setup',
-    intro: 'This page explains how the app is wired and how to point external tools at the proxy.',
+    intro: 'This page is for configuring clients to use the proxy after the app is already running.',
     content: `
       <section class="panel stack">
         <div class="eyebrow">Setup</div>
-        <h2>How the app works</h2>
-        <p>The service listens locally, forwards requests to the configured upstream LLM provider, and stores config plus AI request/response history in PostgreSQL.</p>
+        <h2>Point clients at the proxy</h2>
+        <p>Once the proxy is running and configured in the <a href="/config">Config</a> page, point your local tools at <code>http://localhost:3333</code> instead of a provider base URL.</p>
         <p>OpenAI and OpenRouter use OpenAI-style routes. Anthropic requests are forwarded with Anthropic auth headers and versioning, but this proxy does not translate OpenAI payloads into Anthropic message format.</p>
         <div class="callout">
-          <strong>Run the stack</strong>
-          <pre>docker compose up --build</pre>
+          <strong>Proxy base URL</strong>
+          <pre>http://localhost:3333</pre>
         </div>
         <div class="callout">
-          <strong>Use the web app</strong>
-          <pre>Home:    http://localhost:3333/
-Config:  http://localhost:3333/config
-Testing: http://localhost:3333/testing
-History: http://localhost:3333/history</pre>
-        </div>
-        <div class="callout">
-          <strong>Point a client at the proxy</strong>
+          <strong>Codex</strong>
           <pre>chatgpt_base_url = "http://localhost:3333"</pre>
+        </div>
+        <div class="callout">
+          <strong>Claude Code or other OpenAI-compatible clients</strong>
+          <pre>Base URL: http://localhost:3333
+Route example: /v1/chat/completions</pre>
+        </div>
+        <div class="callout">
+          <strong>Notes</strong>
+          <pre>- Configure provider credentials in the Config page.
+- Use the Testing page to verify upstream connectivity.
+- Use the History page to inspect saved traffic.</pre>
         </div>
       </section>
     `

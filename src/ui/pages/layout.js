@@ -25,14 +25,14 @@ function renderLayout({ page, title, intro, content }) {
   </head>
   <body data-page="${escapeHtml(page)}">
     <div class="page-shell">
-      <aside class="sidebar">
-        <div>
+      <header class="topbar">
+        <div class="topbar-copy">
           <div class="eyebrow">AI Logger Proxy</div>
           <h1>Control, test, and inspect LLM traffic.</h1>
           <p>${escapeHtml(intro)}</p>
         </div>
         <nav class="nav">${nav}</nav>
-      </aside>
+      </header>
       <main class="content">${content}</main>
     </div>
     <div class="modal hidden" id="content-modal" role="dialog" aria-modal="true" aria-labelledby="content-modal-title">

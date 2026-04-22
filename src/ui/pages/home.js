@@ -18,7 +18,7 @@ function renderHomePage() {
           </a>
           <a class="card-link" href="/setup">
             <strong>Setup</strong>
-            <span>Read what the proxy does, how to run it, and how clients should point at it.</span>
+            <span>See how clients such as Codex and Claude Code should be pointed at the proxy after installation.</span>
           </a>
           <a class="card-link" href="/testing">
             <strong>Testing</strong>

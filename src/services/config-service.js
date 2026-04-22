@@ -2,6 +2,7 @@
 
 const { buildDefaultConfig } = require('../config/env');
 const { inferProviderFromBaseUrl, normalizeProvider, providerPresets } = require('../config/providers');
+const { decryptSecret, encryptSecret } = require('../lib/crypto');
 
 function sanitizeConfig(input) {
   const provider = normalizeProvider(input.provider) || inferProviderFromBaseUrl(input.baseUrl) || 'openai';
@@ -14,6 +15,13 @@ function sanitizeConfig(input) {
     ? input.anthropicVersion.trim()
     : providerPresets.anthropic.anthropicVersion;
   const defaultModel = typeof input.defaultModel === 'string' ? input.defaultModel.trim() : '';
+  const stampLogs = Boolean(input.stampLogs);
+  const cloudStorageLogs = Boolean(input.cloudStorageLogs);
+  const notarizeLogs = Boolean(input.notarizeLogs);
+  const integritasApiKey = typeof input.integritasApiKey === 'string' ? input.integritasApiKey.trim() : '';
+  const integritasApiKeyEncrypted = typeof input.integritasApiKeyEncrypted === 'string'
+    ? input.integritasApiKeyEncrypted
+    : '';
 
   new URL(baseUrl);
 
@@ -22,7 +30,14 @@ function sanitizeConfig(input) {
     baseUrl,
     apiKey,
     anthropicVersion,
-    defaultModel
+    defaultModel,
+    stampLogs,
+    cloudStorageLogs,
+    notarizeLogs,
+    integritasApiKey,
+    integritasApiKeyEncrypted: integritasApiKey
+      ? encryptSecret(integritasApiKey)
+      : (stampLogs ? integritasApiKeyEncrypted : '')
   };
 }
 
@@ -44,7 +59,12 @@ function fromRow(row) {
     baseUrl: row.base_url,
     apiKey: row.api_key,
     anthropicVersion: row.anthropic_version,
-    defaultModel: row.default_model
+    defaultModel: row.default_model,
+    stampLogs: row.stamp_logs,
+    cloudStorageLogs: row.cloud_storage_logs,
+    notarizeLogs: row.notarize_logs,
+    integritasApiKeyEncrypted: row.integritas_api_key_encrypted,
+    integritasApiKey: decryptSecret(row.integritas_api_key_encrypted)
   };
 }
 
@@ -72,6 +92,10 @@ function createConfigService(db) {
           api_key = $3,
           anthropic_version = $4,
           default_model = $5,
+          stamp_logs = $6,
+          cloud_storage_logs = $7,
+          notarize_logs = $8,
+          integritas_api_key_encrypted = $9,
           updated_at = NOW()
       WHERE id = 1
       `,
@@ -80,7 +104,11 @@ function createConfigService(db) {
         sanitized.baseUrl,
         sanitized.apiKey,
         sanitized.anthropicVersion,
-        sanitized.defaultModel
+        sanitized.defaultModel,
+        sanitized.stampLogs,
+        sanitized.cloudStorageLogs,
+        sanitized.notarizeLogs,
+        sanitized.integritasApiKeyEncrypted
       ]
     );
 
@@ -96,7 +124,12 @@ function createConfigService(db) {
       anthropicVersion: config.anthropicVersion,
       defaultModel: config.defaultModel,
       apiKeyConfigured: Boolean(config.apiKey),
-      apiKeyPreview: config.apiKey ? maskSecret(config.apiKey) : ''
+      apiKeyPreview: config.apiKey ? maskSecret(config.apiKey) : '',
+      stampLogs: config.stampLogs,
+      cloudStorageLogs: config.cloudStorageLogs,
+      notarizeLogs: config.notarizeLogs,
+      integritasApiKeyConfigured: Boolean(config.integritasApiKey),
+      integritasApiKeyPreview: config.integritasApiKey ? maskSecret(config.integritasApiKey) : ''
     };
   }
 
