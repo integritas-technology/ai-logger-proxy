@@ -81,6 +81,41 @@ If your Codex build supports `chatgpt_base_url`:
 chatgpt_base_url = "http://localhost:3333"
 ```
 
+### OpenCode Desktop
+
+OpenCode's current docs say to add credentials with `/connect` and configure custom providers in `opencode.json`.
+
+1. In OpenCode, run `/connect`
+2. Choose `Other`
+3. Enter a provider id, for example `ai-logger-proxy`
+4. Save the API key you want OpenCode to send to this proxy
+5. Add an OpenAI-compatible provider config that points to the proxy
+6. Define at least one model under `models`
+
+Example `opencode.json`:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "ai-logger-proxy": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "AI Logger Proxy",
+      "options": {
+        "baseURL": "http://localhost:3333/v1"
+      },
+      "models": {
+        "gpt-4.1-mini": {
+          "name": "Proxy Model"
+        }
+      }
+    }
+  }
+}
+```
+
+Then select the configured provider/model in OpenCode. If you want a different upstream model, replace `gpt-4.1-mini` with the model id you configured in this proxy.
+
 ### Claude Code and Other OpenAI-Compatible Clients
 
 Use:

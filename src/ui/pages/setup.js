@@ -22,6 +22,32 @@ function renderSetupPage() {
           <pre>chatgpt_base_url = "http://localhost:3333"</pre>
         </div>
         <div class="callout">
+          <strong>OpenCode Desktop</strong>
+          <pre>1. Add a credential in OpenCode with /connect and choose Other.
+2. Use a provider id such as ai-logger-proxy.
+3. Point the provider baseURL at the proxy.
+4. Add at least one model entry under models.
+
+Example opencode.json:
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "ai-logger-proxy": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "AI Logger Proxy",
+      "options": {
+        "baseURL": "http://localhost:3333/v1"
+      },
+      "models": {
+        "gpt-4.1-mini": {
+          "name": "Proxy Model"
+        }
+      }
+    }
+  }
+}</pre>
+        </div>
+        <div class="callout">
           <strong>Claude Code or other OpenAI-compatible clients</strong>
           <pre>Base URL: http://localhost:3333
 Route example: /v1/chat/completions</pre>

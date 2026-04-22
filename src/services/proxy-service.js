@@ -23,6 +23,13 @@ const proxiedPathPrefixes = [
   '/anthropic/'
 ];
 
+const proxiedPathAliases = new Map([
+  ['/chat/completions', '/v1/chat/completions'],
+  ['/responses', '/v1/responses'],
+  ['/messages', '/v1/messages'],
+  ['/models', '/v1/models']
+]);
+
 function maybeInjectDefaultModel(req, requestBody, config) {
   if (!config.defaultModel || !requestBody.length) {
     return requestBody;
@@ -65,7 +72,7 @@ function logAiLifecycle(label, payload) {
 function buildUpstreamPath(req, config) {
   const { upstreamBasePath } = resolveUpstream(config);
   const requestUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
-  const requestPath = requestUrl.pathname || '/';
+  const requestPath = proxiedPathAliases.get(requestUrl.pathname || '/') || requestUrl.pathname || '/';
   const normalizedPath = upstreamBasePath && requestPath.startsWith(`${upstreamBasePath}/`)
     ? requestPath
     : `${upstreamBasePath}${requestPath}`;
@@ -82,14 +89,16 @@ function normalizeRequestPath(req) {
 
 function shouldProxyRequest(req) {
   const pathname = normalizeRequestPath(req);
-  return proxiedPathPrefixes.some((prefix) => pathname === prefix.slice(0, -1) || pathname.startsWith(prefix));
+  return proxiedPathAliases.has(pathname)
+    || proxiedPathPrefixes.some((prefix) => pathname === prefix.slice(0, -1) || pathname.startsWith(prefix));
 }
 
 function writeNotProxied(res, pathname) {
   writeJson(res, 404, {
     error: 'route_not_found',
     message: `Path ${pathname} is not a frontend route or proxied API route.`,
-    proxiedPrefixes: proxiedPathPrefixes
+    proxiedPrefixes: proxiedPathPrefixes,
+    proxiedAliases: Array.from(proxiedPathAliases.keys())
   });
 }
 
