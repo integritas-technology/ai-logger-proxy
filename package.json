@@ -1,6 +1,6 @@
 {
   "name": "ai-logger-proxy",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Local Dockerized reverse proxy for forwarding LLM API requests with node-http-proxy.",
   "main": "src/server.js",
