@@ -1,8 +1,15 @@
 "use strict";
 
 const { hashString } = require("../lib/crypto");
+const { buildHistoryFileContent } = require("../lib/history-file");
+const { getDebugMode } = require("../config/env");
 
 const POLL_INTERVAL_MS = 3 * 60 * 1000;
+const debugMode = getDebugMode();
+
+function getIntegritasUrl(config, pathname) {
+  return `${config.integritasBaseUrl}${pathname}`;
+}
 
 function logProofLifecycle(label, payload) {
   console.log(
@@ -10,13 +17,16 @@ function logProofLifecycle(label, payload) {
   );
 }
 
-function serializeHistoryRow(row) {
-  const { proof, proofUid, proofStatus, ...rowWithoutProof } = row;
-  return `${JSON.stringify(rowWithoutProof, null, 2)}\n`;
+function logProofDebug(label, payload) {
+  if (!debugMode) {
+    return;
+  }
+
+  logProofLifecycle(label, payload);
 }
 
 function buildRowHash(row) {
-  return hashString(serializeHistoryRow(row));
+  return hashString(buildHistoryFileContent(row));
 }
 
 function normalizeProofPayload(proof) {
@@ -48,7 +58,7 @@ function createProofService({ configService, historyService }) {
     }
 
     const hash = buildRowHash(row);
-    const requestUrl = "https://integritas.technology/core/v1/timestamp/post";
+    const requestUrl = getIntegritasUrl(config, "/v1/timestamp/post");
 
     logProofLifecycle("proof_stamp_started", {
       rowId: row.id,
@@ -123,8 +133,7 @@ function createProofService({ configService, historyService }) {
         return;
       }
 
-      const requestUrl =
-        "https://integritas.technology/core/v1/timestamp/status";
+      const requestUrl = getIntegritasUrl(config, "/v1/timestamp/status");
       logProofLifecycle("proof_status_poll_started", {
         count: uids.length,
         target: requestUrl,
@@ -154,12 +163,47 @@ function createProofService({ configService, historyService }) {
           target: requestUrl,
           statusCode: response.status,
         });
+        logProofDebug("proof_status_poll_error_debug", {
+          target: requestUrl,
+          statusCode: response.status,
+          response: parsed ?? responseText,
+        });
         return;
       }
 
       const data = Array.isArray(parsed?.data) ? parsed.data : [];
       for (const item of data) {
-        if (!item || !item.uid || !item.onchain) {
+        if (!item || !item.uid) {
+          continue;
+        }
+
+        const matchingRows = pendingRows.filter(
+          (row) => row.proofUid === item.uid,
+        );
+
+        if (item.proof === "[ERROR]" || item.status === false || item.error) {
+          const proofError = item.error
+            ? `Proof status failed for uid ${item.uid}: ${item.error}`
+            : `Proof status failed for uid ${item.uid}`;
+          for (const row of matchingRows) {
+            await historyService.updateProofFailed(row.id, proofError);
+          }
+
+          logProofLifecycle("proof_status_poll_failed", {
+            count: matchingRows.length,
+            proofUid: item.uid,
+            error: item.error || "",
+            target: requestUrl,
+          });
+          logProofDebug("proof_status_poll_failed_debug", {
+            proofUid: item.uid,
+            target: requestUrl,
+            response: item,
+          });
+          continue;
+        }
+
+        if (!item.onchain) {
           continue;
         }
 
@@ -172,9 +216,6 @@ function createProofService({ configService, historyService }) {
           },
         ];
 
-        const matchingRows = pendingRows.filter(
-          (row) => row.proofUid === item.uid,
-        );
         for (const row of matchingRows) {
           await historyService.updateProof(row.id, proofPayload);
         }
@@ -183,6 +224,11 @@ function createProofService({ configService, historyService }) {
       logProofLifecycle("proof_status_poll_completed", {
         count: data.length,
         target: requestUrl,
+      });
+      logProofDebug("proof_status_poll_completed_debug", {
+        count: data.length,
+        target: requestUrl,
+        response: parsed ?? responseText,
       });
     } catch (error) {
       logProofLifecycle("proof_status_poll_error", {
@@ -219,8 +265,7 @@ function createProofService({ configService, historyService }) {
       throw error;
     }
 
-    const requestUrl =
-      "https://integritas.technology/core/v1/verify/post-lite-pdf";
+    const requestUrl = getIntegritasUrl(config, "/v1/verify/post-lite-pdf");
     const proofPayload = normalizeProofPayload(row.proof);
 
     if (!proofPayload) {
@@ -290,8 +335,7 @@ function createProofService({ configService, historyService }) {
       throw error;
     }
 
-    const requestUrl =
-      "https://integritas.technology/core/v1/verify/post-lite-pdf";
+    const requestUrl = getIntegritasUrl(config, "/v1/verify/post-lite-pdf");
 
     logProofLifecycle("proof_verify_started", {
       ...context,
@@ -347,7 +391,6 @@ function createProofService({ configService, historyService }) {
     buildRowHash,
     normalizeProofPayload,
     requestProofUid,
-    serializeHistoryRow,
     startPolling,
     verifyProofs,
     verifyRow,
@@ -355,6 +398,6 @@ function createProofService({ configService, historyService }) {
 }
 
 module.exports = {
+  buildRowHash,
   createProofService,
-  serializeHistoryRow,
 };

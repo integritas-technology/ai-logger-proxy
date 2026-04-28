@@ -15,6 +15,9 @@ CREATE TABLE IF NOT EXISTS proxy_config (
   cloud_storage_logs BOOLEAN NOT NULL DEFAULT FALSE,
   notarize_logs BOOLEAN NOT NULL DEFAULT FALSE,
   integritas_api_key_encrypted TEXT NOT NULL DEFAULT '',
+  integritas_base_url TEXT NOT NULL DEFAULT 'https://integritas.technology/core',
+  storage_base_url TEXT NOT NULL DEFAULT 'https://integritas.technology/core',
+  notary_base_url TEXT NOT NULL DEFAULT 'https://integritas.technology/core',
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -41,6 +44,15 @@ async function initializeDatabase() {
   await pool.query('ALTER TABLE proxy_config ADD COLUMN IF NOT EXISTS cloud_storage_logs BOOLEAN NOT NULL DEFAULT FALSE');
   await pool.query('ALTER TABLE proxy_config ADD COLUMN IF NOT EXISTS notarize_logs BOOLEAN NOT NULL DEFAULT FALSE');
   await pool.query('ALTER TABLE proxy_config ADD COLUMN IF NOT EXISTS integritas_api_key_encrypted TEXT NOT NULL DEFAULT \'\'');
+  await pool.query('ALTER TABLE proxy_config ADD COLUMN IF NOT EXISTS integritas_base_url TEXT NOT NULL DEFAULT \'https://integritas.technology/core\'');
+  await pool.query('ALTER TABLE proxy_config ADD COLUMN IF NOT EXISTS storage_base_url TEXT NOT NULL DEFAULT \'https://integritas.technology/core\'');
+  await pool.query('ALTER TABLE proxy_config ADD COLUMN IF NOT EXISTS notary_base_url TEXT NOT NULL DEFAULT \'https://integritas.technology/core\'');
+  await pool.query('ALTER TABLE proxy_config ALTER COLUMN integritas_base_url SET DEFAULT \'https://integritas.technology/core\'');
+  await pool.query('ALTER TABLE proxy_config ALTER COLUMN storage_base_url SET DEFAULT \'https://integritas.technology/core\'');
+  await pool.query('ALTER TABLE proxy_config ALTER COLUMN notary_base_url SET DEFAULT \'https://integritas.technology/core\'');
+  await pool.query('UPDATE proxy_config SET integritas_base_url = $1 WHERE integritas_base_url = $2', ['https://integritas.technology/core', 'https://integritas.technology']);
+  await pool.query('UPDATE proxy_config SET storage_base_url = $1 WHERE storage_base_url = $2', ['https://integritas.technology/core', 'https://integritas.technology']);
+  await pool.query('UPDATE proxy_config SET notary_base_url = $1 WHERE notary_base_url = $2', ['https://integritas.technology/core', 'https://integritas.technology']);
   await pool.query('ALTER TABLE ai_logs ADD COLUMN IF NOT EXISTS proof_uid TEXT NOT NULL DEFAULT \'\'');
   await pool.query('ALTER TABLE ai_logs ADD COLUMN IF NOT EXISTS proof_status BOOLEAN NOT NULL DEFAULT FALSE');
   await pool.query('ALTER TABLE ai_logs ADD COLUMN IF NOT EXISTS proof_error TEXT NOT NULL DEFAULT \'\'');
@@ -48,8 +60,8 @@ async function initializeDatabase() {
   const defaults = buildDefaultConfig();
   await pool.query(
     `
-    INSERT INTO proxy_config (id, provider, base_url, api_key, anthropic_version, default_model, stamp_logs, cloud_storage_logs, notarize_logs, integritas_api_key_encrypted)
-    VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8, $9)
+    INSERT INTO proxy_config (id, provider, base_url, api_key, anthropic_version, default_model, stamp_logs, cloud_storage_logs, notarize_logs, integritas_api_key_encrypted, integritas_base_url, storage_base_url, notary_base_url)
+    VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
     ON CONFLICT (id) DO NOTHING
     `,
     [
@@ -61,7 +73,10 @@ async function initializeDatabase() {
       defaults.stampLogs,
       defaults.cloudStorageLogs,
       defaults.notarizeLogs,
-      defaults.integritasApiKeyEncrypted
+      defaults.integritasApiKeyEncrypted,
+      defaults.integritasBaseUrl,
+      defaults.storageBaseUrl,
+      defaults.notaryBaseUrl
     ]
   );
 

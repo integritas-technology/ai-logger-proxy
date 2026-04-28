@@ -6,13 +6,22 @@ function renderConfigPage() {
   return renderLayout({
     page: "/config",
     title: "Config",
-    intro:
-      "Configuration is now stored in PostgreSQL and applied on the next request without a restart.",
     content: `
+      <section class="page-heading">
+        <div>
+          <div class="eyebrow">Runtime config</div>
+          <h1>Provider settings</h1>
+          <p>Changes are stored locally and applied to new proxy requests immediately.</p>
+        </div>
+      </section>
       <section class="panel config-layout">
         <article class="panel-section">
-          <div class="eyebrow">Normal Config</div>
-          <h2>Update runtime settings</h2>
+          <div class="section-heading">
+            <div>
+              <div class="eyebrow">Connection</div>
+              <h2>Upstream provider</h2>
+            </div>
+          </div>
           <form id="config-form" class="stack">
             <label>Active provider
               <select id="provider" name="provider">
@@ -39,7 +48,7 @@ function renderConfigPage() {
               <input id="defaultModel" name="defaultModel" type="text" placeholder="gpt-4.1-mini">
             </label>
             <div class="inline-actions">
-              <button id="refresh-models-button" type="button">Refresh models</button>
+              <button class="button-secondary" id="refresh-models-button" type="button">Refresh models</button>
               <span class="hint" id="models-status">Loading provider models...</span>
             </div>
             <button id="save-button" type="submit">Save config</button>
@@ -47,19 +56,23 @@ function renderConfigPage() {
           </form>
         </article>
         <article class="panel-section">
-          <div class="eyebrow">Current State</div>
-          <h2>Saved config snapshot</h2>
+          <div class="section-heading">
+            <div>
+              <div class="eyebrow">Current state</div>
+              <h2>Saved snapshot</h2>
+            </div>
+          </div>
           <pre id="config-preview">Loading...</pre>
         </article>
         <details class="panel-section config-addons">
           <summary class="config-addons-summary">
             <div>
-              <div class="eyebrow">Optional Addons</div>
-              <h2>Check the box to opt in.</h2>
+              <div class="eyebrow">Optional addons</div>
+              <h2>Log services</h2>
             </div>
             <span class="config-addons-toggle">
               <span class="config-addons-toggle-icon" aria-hidden="true"></span>
-              <span class="config-addons-toggle-label">Expand</span>
+              <span class="config-addons-toggle-label" aria-hidden="true"></span>
             </span>
           </summary>
           <div class="stack config-addons-body">
@@ -105,6 +118,56 @@ function renderConfigPage() {
                 <span class="sr-only">Log notarization is not yet available</span>
               </label>
             </section>
+          </div>
+        </details>
+        <details class="panel-section config-advanced">
+          <summary class="config-addons-summary">
+            <div>
+              <div class="eyebrow">Advanced settings</div>
+              <h2>Service endpoints</h2>
+            </div>
+            <span class="config-addons-toggle">
+              <span class="config-addons-toggle-icon" aria-hidden="true"></span>
+              <span class="config-addons-toggle-label" aria-hidden="true"></span>
+            </span>
+          </summary>
+          <div class="advanced-settings-grid config-addons-body">
+            <div class="stack">
+              <label>Stamping/verification service URL
+                <select id="integritasBaseUrlMode" name="integritasBaseUrlMode">
+                  <option value="https://integritas.technology/core">https://integritas.technology/core</option>
+                  <option value="http://host.docker.internal:5005">http://host.docker.internal:5005</option>
+                  <option value="__custom__">Custom</option>
+                </select>
+              </label>
+              <label id="integritas-base-url-custom-group" class="hidden">Custom stamping/verification service URL
+                <input id="integritasBaseUrlCustom" name="integritasBaseUrlCustom" type="url">
+              </label>
+            </div>
+            <div class="stack">
+              <label>Cloud storage service URL
+                <select id="storageBaseUrlMode" name="storageBaseUrlMode">
+                  <option value="https://integritas.technology/core">https://integritas.technology/core</option>
+                  <option value="http://host.docker.internal:5005">http://host.docker.internal:5005</option>
+                  <option value="__custom__">Custom</option>
+                </select>
+              </label>
+              <label id="storage-base-url-custom-group" class="hidden">Custom cloud storage service URL
+                <input id="storageBaseUrlCustom" name="storageBaseUrlCustom" type="url">
+              </label>
+            </div>
+            <div class="stack">
+              <label>Notary service URL
+                <select id="notaryBaseUrlMode" name="notaryBaseUrlMode">
+                  <option value="https://integritas.technology/core">https://integritas.technology/core</option>
+                  <option value="http://host.docker.internal:5005">http://host.docker.internal:5005</option>
+                  <option value="__custom__">Custom</option>
+                </select>
+              </label>
+              <label id="notary-base-url-custom-group" class="hidden">Custom notary service URL
+                <input id="notaryBaseUrlCustom" name="notaryBaseUrlCustom" type="url">
+              </label>
+            </div>
           </div>
         </details>
       </section>

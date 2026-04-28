@@ -1,5 +1,10 @@
 'use strict';
 
+const { getDebugMode } = require('../config/env');
+const { buildHistoryFileContent } = require('../lib/history-file');
+
+const debugMode = getDebugMode();
+
 function extractModelFromPayload(payload) {
   if (!payload || typeof payload !== 'object') {
     return '';
@@ -8,8 +13,32 @@ function extractModelFromPayload(payload) {
   return payload.model || payload.body?.model || '';
 }
 
+function mapHistoryRow(row) {
+  const historyRow = {
+    id: row.id,
+    timestamp: row.timestamp,
+    llm: row.llm,
+    request: row.request_json,
+    response: row.response_json,
+    proofUid: row.proof_uid,
+    proofStatus: row.proof_status,
+    proofError: row.proof_error,
+    proof: row.proof
+  };
+
+  return {
+    ...historyRow,
+    fileContent: buildHistoryFileContent(historyRow)
+  };
+}
+
 function createHistoryService(db, initialProofService) {
   let proofService = initialProofService || null;
+
+  function logProofCreationError(rowId, error) {
+    const details = debugMode ? ` (${error.stack || error.message})` : '';
+    console.error(`Failed to create proof for row ${rowId}: ${error.message}${details}`);
+  }
 
   async function saveCommunication(entry) {
     const result = await db.query(
@@ -30,17 +59,7 @@ function createHistoryService(db, initialProofService) {
       ]
     );
 
-    const savedRow = {
-      id: result.rows[0].id,
-      timestamp: result.rows[0].timestamp,
-      llm: result.rows[0].llm,
-      request: result.rows[0].request_json,
-      response: result.rows[0].response_json,
-      proofUid: result.rows[0].proof_uid,
-      proofStatus: result.rows[0].proof_status,
-      proofError: result.rows[0].proof_error,
-      proof: result.rows[0].proof
-    };
+    const savedRow = mapHistoryRow(result.rows[0]);
 
     if (proofService) {
       const attemptProof = async () => {
@@ -63,7 +82,7 @@ function createHistoryService(db, initialProofService) {
           return await attemptProof();
         } catch (error) {
           await updateProofError(savedRow.id, error.message);
-          console.error(`Failed to create proof for row ${savedRow.id}: ${error.message}`);
+          logProofCreationError(savedRow.id, error);
           return {
             ...savedRow,
             proofError: error.message
@@ -73,7 +92,7 @@ function createHistoryService(db, initialProofService) {
 
       attemptProof().catch((error) => {
         updateProofError(savedRow.id, error.message).catch(() => {});
-        console.error(`Failed to create proof for row ${savedRow.id}: ${error.message}`);
+        logProofCreationError(savedRow.id, error);
       });
     }
 
@@ -92,17 +111,7 @@ function createHistoryService(db, initialProofService) {
       [safeLimit]
     );
 
-    return result.rows.map((row) => ({
-      id: row.id,
-      timestamp: row.timestamp,
-      llm: row.llm,
-      request: row.request_json,
-      response: row.response_json,
-      proofUid: row.proof_uid,
-      proofStatus: row.proof_status,
-      proofError: row.proof_error,
-      proof: row.proof
-    }));
+    return result.rows.map(mapHistoryRow);
   }
 
   async function getHistoryRow(id) {
@@ -119,17 +128,7 @@ function createHistoryService(db, initialProofService) {
       return null;
     }
 
-    return {
-      id: result.rows[0].id,
-      timestamp: result.rows[0].timestamp,
-      llm: result.rows[0].llm,
-      request: result.rows[0].request_json,
-      response: result.rows[0].response_json,
-      proofUid: result.rows[0].proof_uid,
-      proofStatus: result.rows[0].proof_status,
-      proofError: result.rows[0].proof_error,
-      proof: result.rows[0].proof
-    };
+    return mapHistoryRow(result.rows[0]);
   }
 
   async function updateProof(id, proof) {
@@ -169,6 +168,18 @@ function createHistoryService(db, initialProofService) {
     );
   }
 
+  async function updateProofFailed(id, proofError) {
+    await db.query(
+      `
+      UPDATE ai_logs
+      SET proof = 'Failed',
+          proof_error = $2
+      WHERE id = $1
+      `,
+      [id, proofError]
+    );
+  }
+
   async function listPendingProofRows() {
     const result = await db.query(
       `
@@ -176,21 +187,12 @@ function createHistoryService(db, initialProofService) {
       FROM ai_logs
       WHERE proof_uid <> ''
         AND proof_status = FALSE
+        AND proof_error = ''
       ORDER BY id ASC
       `
     );
 
-    return result.rows.map((row) => ({
-      id: row.id,
-      timestamp: row.timestamp,
-      llm: row.llm,
-      request: row.request_json,
-      response: row.response_json,
-      proofUid: row.proof_uid,
-      proofStatus: row.proof_status,
-      proofError: row.proof_error,
-      proof: row.proof
-    }));
+    return result.rows.map(mapHistoryRow);
   }
 
   return {
@@ -202,6 +204,7 @@ function createHistoryService(db, initialProofService) {
     setProofService(nextProofService) {
       proofService = nextProofService;
     },
+    updateProofFailed,
     updateProofError,
     updateProofUid,
     updateProof

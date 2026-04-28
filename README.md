@@ -22,39 +22,27 @@ It listens on `localhost`, forwards supported API requests to the currently sele
 
 ### Local Install
 
-1. Copy the example environment file:
+1. Clone the repo locally:
 
 ```bash
-cp .env.example .env
+git clone https://github.com/integritas-technology/ai-logger-proxy
 ```
 
-2. Update `.env` if you want different defaults:
-
-```env
-PORT=3333
-CONFIG_ENCRYPTION_KEY=change-this-secret
-POSTGRES_DB=ai_logger_proxy
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgres
-POSTGRES_PORT=5432
-DATABASE_URL=postgresql://postgres:postgres@postgres:5432/ai_logger_proxy
-```
-
-3. Start the stack:
+2. Start the stack:
 
 ```bash
-docker compose up --build
+docker compose up -d --build
 ```
 
-4. Open the app:
+3. Open the app:
 
 ```text
 http://localhost:3333/
 ```
 
-Provider config is no longer taken from environment variables. After startup, active provider settings are configured in the web UI and stored in PostgreSQL.
-
 `CONFIG_ENCRYPTION_KEY` is used to encrypt the saved Integritas API key in the database. Keep it stable across restarts if you want previously saved encrypted values to remain readable.
+
+`DEBUG_MODE=true` enables extra error detail in server logs, including underlying proof creation fetch errors.
 
 ## First-Time Use
 
@@ -73,125 +61,11 @@ Once the proxy is running, point your tools at:
 http://localhost:3333
 ```
 
-### Codex
+### Supported tools
 
-If your Codex build supports `chatgpt_base_url`:
-
-```toml
-chatgpt_base_url = "http://localhost:3333"
-```
-
-### OpenCode Desktop
-
-OpenCode's current docs say to add credentials with `/connect` and configure custom providers in `opencode.json`.
-
-1. In OpenCode, run `/connect`
-2. Choose `Other`
-3. Enter a provider id, for example `ai-logger-proxy`
-4. Save the API key you want OpenCode to send to this proxy
-5. Add an OpenAI-compatible provider config that points to the proxy
-6. Define at least one model under `models`
-
-Example `opencode.json`:
-
-```json
-{
-  "$schema": "https://opencode.ai/config.json",
-  "provider": {
-    "ai-logger-proxy": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "AI Logger Proxy",
-      "options": {
-        "baseURL": "http://localhost:3333/v1"
-      },
-      "models": {
-        "gpt-4.1-mini": {
-          "name": "Proxy Model"
-        }
-      }
-    }
-  }
-}
-```
-
-Then select the configured provider/model in OpenCode. If you want a different upstream model, replace `gpt-4.1-mini` with the model id you configured in this proxy.
-
-### Claude Code and Other OpenAI-Compatible Clients
-
-Use:
-
-- Base URL: `http://localhost:3333`
-- Example route: `/v1/chat/completions`
-
-Note: this proxy does not translate OpenAI payloads into Anthropic Messages API payloads. Anthropic support here is for forwarding Anthropic-style requests through the same proxy.
-
-## Supported Providers
-
-- `openai` -> `https://api.openai.com`
-- `anthropic` -> `https://api.anthropic.com`
-- `openrouter` -> `https://openrouter.ai/api`
-
-Behavior:
-
-- `OpenAI` and `OpenRouter` use bearer auth and OpenAI-style routes.
-- `Anthropic` uses `x-api-key` and `anthropic-version`.
-
-## API Endpoints
-
-Admin endpoints:
-
-- `GET /__admin/config`
-- `POST /__admin/config`
-- `POST /__admin/models`
-- `POST /__admin/test`
-- `GET /__admin/history?limit=50`
-- `GET /healthz`
-
-Proxy routes are intentionally guarded. Supported API traffic is proxied only for allowed prefixes such as `/v1/...`.
-
-## Example Proxy Request
-
-```bash
-curl http://localhost:3333/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "gpt-4o-mini",
-    "messages": [
-      {"role": "user", "content": "Say hello"}
-    ]
-  }'
-```
-
-## Logging and History
-
-Console logs include lifecycle and proxy events such as:
-
-- incoming client requests
-- outgoing upstream requests
-- incoming upstream responses
-- model refresh start/success/error
-- AI request start/success/error
-
-Sensitive headers such as `Authorization` and `x-api-key` are redacted.
-
-Stored history rows contain:
-
-- `timestamp`
-- `llm`
-- `request_json`
-- `response_json`
-- `proof`
-
-## Project Structure
-
-- `src/server.js`: startup entry point
-- `src/app.js`: app bootstrap
-- `src/routes/`: page and admin API routes
-- `src/services/`: config, models, proxy, test, and history services
-- `src/db/`: PostgreSQL initialization
-- `src/ui/`: frontend pages and shared assets
-- `docker-compose.yml`: local runtime with Postgres
-- `Dockerfile`: app image
+- Codex
+- OpenCode Desktop
+- Claude Code and Other OpenAI-Compatible Clients
 
 ## Notes
 

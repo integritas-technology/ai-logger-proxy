@@ -6,29 +6,56 @@ function renderHomePage() {
   return renderLayout({
     page: '/',
     title: 'Home',
-    intro: 'The frontend is split into focused pages instead of a single admin screen.',
     content: `
-      <section class="panel">
-        <div class="eyebrow">Overview</div>
-        <h2>Choose the area you need.</h2>
-        <div class="card-grid">
-          <a class="card-link" href="/config">
-            <strong>Config</strong>
-            <span>Save the active provider, base URL, API key, Anthropic version, and fallback model in PostgreSQL.</span>
-          </a>
-          <a class="card-link" href="/setup">
-            <strong>Setup</strong>
-            <span>See how clients such as Codex and Claude Code should be pointed at the proxy after installation.</span>
-          </a>
-          <a class="card-link" href="/testing">
-            <strong>Testing</strong>
-            <span>Send a real inference request through the configured upstream provider from the browser.</span>
-          </a>
-          <a class="card-link" href="/history">
-            <strong>History</strong>
-            <span>Inspect saved AI traffic rows, including full request/response blobs and a placeholder proof field.</span>
-          </a>
+      <section class="hero-panel">
+        <div class="hero-copy">
+          <div class="eyebrow">Control plane</div>
+          <h1>Capture, inspect, and verify local LLM traffic.</h1>
+          <p>Configure one upstream provider, point your AI tools at the proxy, and use the saved history to review every request and response.</p>
+          <div class="hero-actions">
+            <a class="button button-primary" href="/config">Configure provider</a>
+            <a class="button button-secondary" href="/history">View history</a>
+          </div>
         </div>
+        <div class="hero-status" aria-label="Proxy workflow">
+          <div class="status-line">
+            <span class="status-dot"></span>
+            <span>Proxy endpoint</span>
+            <strong>localhost:3333</strong>
+          </div>
+          <div class="route-preview">
+            <span>Client</span>
+            <span>Proxy</span>
+            <span>Provider</span>
+          </div>
+          <pre>{
+  "capture": "request + response",
+  "storage": "local history",
+  "proofs": "optional"
+}</pre>
+        </div>
+      </section>
+      <section class="workflow-grid">
+        <a class="workflow-card" href="/config">
+          <span class="step-number">01</span>
+          <h2>Configure</h2>
+          <p>Choose OpenAI, Anthropic, or OpenRouter and set the model fallback.</p>
+        </a>
+        <a class="workflow-card" href="/testing">
+          <span class="step-number">02</span>
+          <h2>Test</h2>
+          <p>Run a real inference through the saved provider settings.</p>
+        </a>
+        <a class="workflow-card" href="/setup">
+          <span class="step-number">03</span>
+          <h2>Connect</h2>
+          <p>Point Codex, OpenCode, or OpenAI-compatible clients at the proxy.</p>
+        </a>
+        <a class="workflow-card" href="/history">
+          <span class="step-number">04</span>
+          <h2>Inspect</h2>
+          <p>Filter saved traffic, open raw payloads, and verify stamped logs.</p>
+        </a>
       </section>
     `
   });

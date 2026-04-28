@@ -4,6 +4,17 @@ const { buildDefaultConfig } = require('../config/env');
 const { inferProviderFromBaseUrl, normalizeProvider, providerPresets } = require('../config/providers');
 const { decryptSecret, encryptSecret } = require('../lib/crypto');
 
+const defaultConfig = buildDefaultConfig();
+
+function sanitizeServiceUrl(value, fallback) {
+  const serviceUrl = typeof value === 'string' && value.trim()
+    ? value.trim()
+    : fallback;
+
+  new URL(serviceUrl);
+  return serviceUrl.replace(/\/+$/, '');
+}
+
 function sanitizeConfig(input) {
   const provider = normalizeProvider(input.provider) || inferProviderFromBaseUrl(input.baseUrl) || 'openai';
   const preset = providerPresets[provider] || providerPresets.openai;
@@ -22,6 +33,9 @@ function sanitizeConfig(input) {
   const integritasApiKeyEncrypted = typeof input.integritasApiKeyEncrypted === 'string'
     ? input.integritasApiKeyEncrypted
     : '';
+  const integritasBaseUrl = sanitizeServiceUrl(input.integritasBaseUrl, defaultConfig.integritasBaseUrl);
+  const storageBaseUrl = sanitizeServiceUrl(input.storageBaseUrl, defaultConfig.storageBaseUrl);
+  const notaryBaseUrl = sanitizeServiceUrl(input.notaryBaseUrl, defaultConfig.notaryBaseUrl);
 
   new URL(baseUrl);
 
@@ -37,7 +51,10 @@ function sanitizeConfig(input) {
     integritasApiKey,
     integritasApiKeyEncrypted: integritasApiKey
       ? encryptSecret(integritasApiKey)
-      : (stampLogs ? integritasApiKeyEncrypted : '')
+      : (stampLogs ? integritasApiKeyEncrypted : ''),
+    integritasBaseUrl,
+    storageBaseUrl,
+    notaryBaseUrl
   };
 }
 
@@ -64,7 +81,10 @@ function fromRow(row) {
     cloudStorageLogs: row.cloud_storage_logs,
     notarizeLogs: row.notarize_logs,
     integritasApiKeyEncrypted: row.integritas_api_key_encrypted,
-    integritasApiKey: decryptSecret(row.integritas_api_key_encrypted)
+    integritasApiKey: decryptSecret(row.integritas_api_key_encrypted),
+    integritasBaseUrl: row.integritas_base_url,
+    storageBaseUrl: row.storage_base_url,
+    notaryBaseUrl: row.notary_base_url
   };
 }
 
@@ -96,6 +116,9 @@ function createConfigService(db) {
           cloud_storage_logs = $7,
           notarize_logs = $8,
           integritas_api_key_encrypted = $9,
+          integritas_base_url = $10,
+          storage_base_url = $11,
+          notary_base_url = $12,
           updated_at = NOW()
       WHERE id = 1
       `,
@@ -108,7 +131,10 @@ function createConfigService(db) {
         sanitized.stampLogs,
         sanitized.cloudStorageLogs,
         sanitized.notarizeLogs,
-        sanitized.integritasApiKeyEncrypted
+        sanitized.integritasApiKeyEncrypted,
+        sanitized.integritasBaseUrl,
+        sanitized.storageBaseUrl,
+        sanitized.notaryBaseUrl
       ]
     );
 
@@ -129,7 +155,10 @@ function createConfigService(db) {
       cloudStorageLogs: config.cloudStorageLogs,
       notarizeLogs: config.notarizeLogs,
       integritasApiKeyConfigured: Boolean(config.integritasApiKey),
-      integritasApiKeyPreview: config.integritasApiKey ? maskSecret(config.integritasApiKey) : ''
+      integritasApiKeyPreview: config.integritasApiKey ? maskSecret(config.integritasApiKey) : '',
+      integritasBaseUrl: config.integritasBaseUrl,
+      storageBaseUrl: config.storageBaseUrl,
+      notaryBaseUrl: config.notaryBaseUrl
     };
   }
 

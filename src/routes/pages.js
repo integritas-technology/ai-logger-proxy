@@ -14,6 +14,7 @@ const assetPath = getUiAssetPath();
 function createPageRouter() {
   const pages = new Map([
     ['/', renderHomePage],
+    ['/home', renderHomePage],
     ['/config', renderConfigPage],
     ['/setup', renderSetupPage],
     ['/testing', renderTestingPage],

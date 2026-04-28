@@ -6,26 +6,32 @@ function renderTestingPage() {
   return renderLayout({
     page: '/testing',
     title: 'Testing',
-    intro: 'Run a direct end-to-end test through the active provider and inspect the full metadata.',
     content: `
-      <section class="panel stack">
-        <div class="eyebrow">Testing</div>
-        <h2>Run a live inference</h2>
-        <p>The button below sends a real request through the saved provider configuration and stores the result in history.</p>
+      <section class="page-heading">
+        <div>
+          <div class="eyebrow">Provider test</div>
+          <h1>Run a live inference</h1>
+          <p>Send one request through the saved configuration and save the result to history.</p>
+        </div>
         <button id="test-button" type="button">Run provider test</button>
+      </section>
+      <section class="panel stack">
         <div class="status" id="test-status"></div>
         <div class="response-grid">
           <article class="panel-section">
-            <div class="eyebrow">Raw Request Body</div>
-            <button id="test-request-button" type="button" disabled>Raw Request Body</button>
+            <div class="eyebrow">Request payload</div>
+            <h2>Raw request body</h2>
+            <button class="button-secondary" id="test-request-button" type="button" disabled>Open request</button>
           </article>
           <article class="panel-section">
-            <div class="eyebrow">Raw Response Body</div>
-            <button id="test-response-button" type="button" disabled>Raw Response Body</button>
+            <div class="eyebrow">Response payload</div>
+            <h2>Raw response body</h2>
+            <button class="button-secondary" id="test-response-button" type="button" disabled>Open response</button>
           </article>
         </div>
         <article class="panel-section">
-          <div class="eyebrow">Latest Run</div>
+          <div class="eyebrow">Latest run</div>
+          <h2>Result metadata</h2>
           <div class="meta-grid">
             <div class="meta-item">
               <span class="meta-label">Timestamp</span>

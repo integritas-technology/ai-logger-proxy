@@ -4,6 +4,11 @@ const presets = {
   openrouter: { baseUrl: 'https://openrouter.ai/api', anthropicVersion: '2023-06-01' }
 };
 
+const serviceUrlPresets = [
+  'https://integritas.technology/core',
+  'http://host.docker.internal:5005'
+];
+
 function setStatus(element, message, isError = false) {
   if (!element) {
     return;
@@ -103,6 +108,15 @@ async function loadConfigPage() {
   const notarizeLogsInput = document.getElementById('notarizeLogs');
   const integritasApiKeyGroup = document.getElementById('integritas-api-key-group');
   const integritasApiKeyInput = document.getElementById('integritasApiKey');
+  const integritasBaseUrlMode = document.getElementById('integritasBaseUrlMode');
+  const integritasBaseUrlCustomGroup = document.getElementById('integritas-base-url-custom-group');
+  const integritasBaseUrlCustom = document.getElementById('integritasBaseUrlCustom');
+  const storageBaseUrlMode = document.getElementById('storageBaseUrlMode');
+  const storageBaseUrlCustomGroup = document.getElementById('storage-base-url-custom-group');
+  const storageBaseUrlCustom = document.getElementById('storageBaseUrlCustom');
+  const notaryBaseUrlMode = document.getElementById('notaryBaseUrlMode');
+  const notaryBaseUrlCustomGroup = document.getElementById('notary-base-url-custom-group');
+  const notaryBaseUrlCustom = document.getElementById('notaryBaseUrlCustom');
   const modelsStatus = document.getElementById('models-status');
   const preview = document.getElementById('config-preview');
   const status = document.getElementById('status');
@@ -131,7 +145,10 @@ async function loadConfigPage() {
         : false,
       integritasApiKeyPreview: stampLogsInput.checked
         ? (integritasApiKeyInput.value.trim() ? 'Updated on save' : savedIntegritasApiKeyPreview)
-        : ''
+        : '',
+      integritasBaseUrl: getServiceUrlValue(integritasBaseUrlMode, integritasBaseUrlCustom),
+      storageBaseUrl: getServiceUrlValue(storageBaseUrlMode, storageBaseUrlCustom),
+      notaryBaseUrl: getServiceUrlValue(notaryBaseUrlMode, notaryBaseUrlCustom)
     };
   }
 
@@ -145,6 +162,32 @@ async function loadConfigPage() {
 
   function updateStampFields() {
     integritasApiKeyGroup.classList.toggle('hidden', !stampLogsInput.checked);
+    updateCurrentStatePreview();
+  }
+
+  function getServiceUrlValue(select, customInput) {
+    return select.value === '__custom__' ? customInput.value.trim() : select.value;
+  }
+
+  function setServiceUrlValue(select, customGroup, customInput, value) {
+    if (serviceUrlPresets.includes(value)) {
+      select.value = value;
+      customInput.value = '';
+      customInput.required = false;
+      customGroup.classList.add('hidden');
+      return;
+    }
+
+    select.value = '__custom__';
+    customInput.value = value || '';
+    customInput.required = true;
+    customGroup.classList.remove('hidden');
+  }
+
+  function updateServiceUrlField(select, customGroup, customInput) {
+    const isCustom = select.value === '__custom__';
+    customGroup.classList.toggle('hidden', !isCustom);
+    customInput.required = isCustom;
     updateCurrentStatePreview();
   }
 
@@ -257,11 +300,22 @@ async function loadConfigPage() {
 
   stampLogsInput.addEventListener('change', updateStampFields);
   [
+    [integritasBaseUrlMode, integritasBaseUrlCustomGroup, integritasBaseUrlCustom],
+    [storageBaseUrlMode, storageBaseUrlCustomGroup, storageBaseUrlCustom],
+    [notaryBaseUrlMode, notaryBaseUrlCustomGroup, notaryBaseUrlCustom]
+  ].forEach(([select, customGroup, customInput]) => {
+    select.addEventListener('change', () => updateServiceUrlField(select, customGroup, customInput));
+  });
+
+  [
     baseUrlInput,
     apiKeyInput,
     anthropicVersionInput,
     defaultModelInput,
-    integritasApiKeyInput
+    integritasApiKeyInput,
+    integritasBaseUrlCustom,
+    storageBaseUrlCustom,
+    notaryBaseUrlCustom
   ].forEach((input) => {
     input.addEventListener('input', updateCurrentStatePreview);
   });
@@ -280,6 +334,9 @@ async function loadConfigPage() {
   anthropicVersionInput.value = config.anthropicVersion || presets.anthropic.anthropicVersion;
   defaultModelInput.value = config.defaultModel || '';
   stampLogsInput.checked = Boolean(config.stampLogs);
+  setServiceUrlValue(integritasBaseUrlMode, integritasBaseUrlCustomGroup, integritasBaseUrlCustom, config.integritasBaseUrl || serviceUrlPresets[0]);
+  setServiceUrlValue(storageBaseUrlMode, storageBaseUrlCustomGroup, storageBaseUrlCustom, config.storageBaseUrl || serviceUrlPresets[0]);
+  setServiceUrlValue(notaryBaseUrlMode, notaryBaseUrlCustomGroup, notaryBaseUrlCustom, config.notaryBaseUrl || serviceUrlPresets[0]);
   if (cloudStorageLogsInput) {
     cloudStorageLogsInput.checked = Boolean(config.cloudStorageLogs);
   }
@@ -310,7 +367,10 @@ async function loadConfigPage() {
         : defaultModelSelect.value,
       stampLogs: stampLogsInput.checked,
       cloudStorageLogs: Boolean(cloudStorageLogsInput?.checked),
-      notarizeLogs: Boolean(notarizeLogsInput?.checked)
+      notarizeLogs: Boolean(notarizeLogsInput?.checked),
+      integritasBaseUrl: getServiceUrlValue(integritasBaseUrlMode, integritasBaseUrlCustom),
+      storageBaseUrl: getServiceUrlValue(storageBaseUrlMode, storageBaseUrlCustom),
+      notaryBaseUrl: getServiceUrlValue(notaryBaseUrlMode, notaryBaseUrlCustom)
     };
 
     if (apiKeyInput.value.trim()) {
@@ -349,6 +409,9 @@ async function loadConfigPage() {
       if (notarizeLogsInput) {
         notarizeLogsInput.checked = Boolean(result.config.notarizeLogs);
       }
+      setServiceUrlValue(integritasBaseUrlMode, integritasBaseUrlCustomGroup, integritasBaseUrlCustom, result.config.integritasBaseUrl || serviceUrlPresets[0]);
+      setServiceUrlValue(storageBaseUrlMode, storageBaseUrlCustomGroup, storageBaseUrlCustom, result.config.storageBaseUrl || serviceUrlPresets[0]);
+      setServiceUrlValue(notaryBaseUrlMode, notaryBaseUrlCustomGroup, notaryBaseUrlCustom, result.config.notaryBaseUrl || serviceUrlPresets[0]);
       updateStampFields();
       updateCurrentStatePreview();
       await refreshModels(result.config.defaultModel || '');
@@ -424,8 +487,7 @@ async function loadTestingPage() {
 function renderHistoryRow(row, isSelected = false) {
   const requestValue = encodeURIComponent(formatBodyContent(row.request?.body));
   const responseValue = encodeURIComponent(formatBodyContent(row.response?.body));
-  const { proof, proofUid, proofStatus, proofError, ...rowWithoutProof } = row;
-  const rowValue = encodeURIComponent(`${formatJson(rowWithoutProof)}\n`);
+  const rowValue = encodeURIComponent(row.fileContent || '');
   const provider = row.request?.provider || row.response?.provider || '';
   const model = row.request?.body?.model || row.response?.body?.model || '';
   const hasProof = Boolean(row.proofStatus && row.proof);
@@ -729,11 +791,30 @@ async function loadHistoryPage() {
   await refreshHistory();
 }
 
+function loadSetupPage() {
+  const toolSelect = document.getElementById('setup-tool');
+  if (!toolSelect) {
+    return;
+  }
+
+  const panels = Array.from(document.querySelectorAll('[data-setup-tool-panel]'));
+
+  function updateSetupPanel() {
+    panels.forEach((panel) => {
+      panel.classList.toggle('hidden', panel.dataset.setupToolPanel !== toolSelect.value);
+    });
+  }
+
+  toolSelect.addEventListener('change', updateSetupPanel);
+  updateSetupPanel();
+}
+
 window.addEventListener('DOMContentLoaded', () => {
   loadConfigPage().catch((error) => {
     setStatus(document.getElementById('status'), error.message, true);
   });
   loadTestingPage();
+  loadSetupPage();
   loadHistoryPage().catch((error) => {
     setStatus(document.getElementById('history-status'), error.message, true);
   });

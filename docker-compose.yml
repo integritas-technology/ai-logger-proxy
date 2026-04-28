@@ -25,6 +25,7 @@ services:
       - "${PORT:-3333}:3333"
     environment:
       PORT: 3333
+      DEBUG_MODE: ${DEBUG_MODE:-false}
       CONFIG_ENCRYPTION_KEY: ${CONFIG_ENCRYPTION_KEY:-change-this-secret}
       DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/ai_logger_proxy}
 

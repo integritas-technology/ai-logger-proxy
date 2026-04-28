@@ -6,20 +6,24 @@ function renderHistoryPage() {
   return renderLayout({
     page: '/history',
     title: 'History',
-    intro: 'Each stored row contains a timestamp, LLM identifier, request blob, response blob, and an empty proof field.',
     content: `
+      <section class="page-heading">
+        <div>
+          <div class="eyebrow">Saved traffic</div>
+          <h1>Request history</h1>
+          <p>Search stored payloads, download log files, and verify stamped proofs.</p>
+        </div>
+        <button id="history-verify-all" type="button">Verify all</button>
+      </section>
       <section class="panel stack">
-        <div class="eyebrow">History</div>
-        <h2>Saved AI communication</h2>
         <div class="toolbar">
           <div class="toolbar-left">
             <div class="inline-actions">
               <button id="history-refresh" type="button">Refresh history</button>
-              <button id="history-clear-button" type="button">Clear filters</button>
+              <button class="button-secondary" id="history-clear-button" type="button">Clear filters</button>
             </div>
             <div class="status" id="history-status"></div>
           </div>
-          <button id="history-verify-all" type="button">Verify all</button>
         </div>
         <div class="history-filters">
           <label class="filter-field">From date
@@ -32,7 +36,7 @@ function renderHistoryPage() {
             <label class="filter-field">Search
               <input id="history-search" type="search" placeholder="Search request or response body">
             </label>
-            <button id="history-search-button" type="button">Search</button>
+            <button class="button-secondary" id="history-search-button" type="button">Search</button>
           </div>
         </div>
         <div class="history-table-wrap">

@@ -1,37 +1,48 @@
-'use strict';
+"use strict";
 
-const path = require('path');
-const { providerPresets } = require('./providers');
+const path = require("path");
+const { providerPresets } = require("./providers");
 
 function getPort() {
-  return Number.parseInt(process.env.PORT || '3333', 10);
+  return Number.parseInt(process.env.PORT || "3333", 10);
 }
 
 function getDatabaseUrl() {
-  return process.env.DATABASE_URL || 'postgresql://postgres:postgres@postgres:5432/ai_logger_proxy';
+  return (
+    process.env.DATABASE_URL ||
+    "postgresql://postgres:postgres@postgres:5432/ai_logger_proxy"
+  );
+}
+
+function getDebugMode() {
+  return String(process.env.DEBUG_MODE || "").toLowerCase() === "true";
 }
 
 function buildDefaultConfig() {
   return {
-    provider: 'openai',
+    provider: "openai",
     baseUrl: providerPresets.openai.baseUrl,
-    apiKey: '',
+    apiKey: "",
     anthropicVersion: providerPresets.anthropic.anthropicVersion,
-    defaultModel: '',
+    defaultModel: "",
     stampLogs: false,
     cloudStorageLogs: false,
     notarizeLogs: false,
-    integritasApiKeyEncrypted: ''
+    integritasApiKeyEncrypted: "",
+    integritasBaseUrl: "https://integritas.technology/core",
+    storageBaseUrl: "https://integritas.technology/core",
+    notaryBaseUrl: "https://integritas.technology/core",
   };
 }
 
 function getUiAssetPath() {
-  return path.join(__dirname, '..', 'ui', 'assets');
+  return path.join(__dirname, "..", "ui", "assets");
 }
 
 module.exports = {
   buildDefaultConfig,
   getDatabaseUrl,
+  getDebugMode,
   getPort,
-  getUiAssetPath
+  getUiAssetPath,
 };
