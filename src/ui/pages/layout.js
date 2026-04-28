@@ -4,10 +4,10 @@ const { escapeHtml } = require('../../lib/http');
 
 const navItems = [
   ['/', 'Overview'],
-  ['/config', 'Config'],
-  ['/testing', 'Testing'],
-  ['/setup', 'Setup'],
-  ['/history', 'History']
+  ['/config', 'Configure'],
+  ['/testing', 'Test'],
+  ['/setup', 'Connect'],
+  ['/history', 'Inspect']
 ];
 
 function renderLayout({ page, title, content }) {

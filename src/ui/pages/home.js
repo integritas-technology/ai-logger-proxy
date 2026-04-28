@@ -17,22 +17,52 @@ function renderHomePage() {
             <a class="button button-secondary" href="/history">View history</a>
           </div>
         </div>
-        <div class="hero-status" aria-label="Proxy workflow">
-          <div class="status-line">
-            <span class="status-dot"></span>
-            <span>Proxy endpoint</span>
-            <strong>localhost:3333</strong>
+        <div class="flow-diagram" aria-label="AI Logger Proxy request flow">
+          <div class="flow-node">
+            <span class="flow-kicker">AI client</span>
+            <strong>Codex / OpenCode</strong>
+            <span>Base URL points to localhost:3333</span>
           </div>
-          <div class="route-preview">
-            <span>Client</span>
-            <span>Proxy</span>
-            <span>Provider</span>
+          <div class="flow-connector-pair" aria-hidden="true">
+            <span class="flow-stream flow-stream-down">
+              <span class="flow-packet"></span>
+              <span class="flow-packet"></span>
+            </span>
+            <span class="flow-stream flow-stream-up">
+              <span class="flow-packet"></span>
+              <span class="flow-packet"></span>
+            </span>
           </div>
-          <pre>{
-  "capture": "request + response",
-  "storage": "local history",
-  "proofs": "optional"
-}</pre>
+          <div class="flow-node flow-node-primary">
+            <div class="flow-node-copy">
+              <span class="flow-kicker">Proxy</span>
+              <strong>Capture traffic</strong>
+              <span>Log request and response payloads</span>
+            </div>
+            <div class="package-animation" aria-hidden="true">
+              <span class="package-dot package-dot-request"></span>
+              <span class="package-dot package-dot-response"></span>
+              <span class="package-box">
+                <span></span>
+                <span></span>
+              </span>
+            </div>
+          </div>
+          <div class="flow-connector-pair" aria-hidden="true">
+            <span class="flow-stream flow-stream-down">
+              <span class="flow-packet"></span>
+              <span class="flow-packet"></span>
+            </span>
+            <span class="flow-stream flow-stream-up">
+              <span class="flow-packet"></span>
+              <span class="flow-packet"></span>
+            </span>
+          </div>
+          <div class="flow-node">
+            <span class="flow-kicker">Provider</span>
+            <strong>OpenAI / Anthropic / OpenRouter</strong>
+            <span>Return model response</span>
+          </div>
         </div>
       </section>
       <section class="workflow-grid">

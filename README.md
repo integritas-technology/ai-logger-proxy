@@ -40,10 +40,6 @@ docker compose up -d --build
 http://localhost:3333/
 ```
 
-`CONFIG_ENCRYPTION_KEY` is used to encrypt the saved Integritas API key in the database. Keep it stable across restarts if you want previously saved encrypted values to remain readable.
-
-`DEBUG_MODE=true` enables extra error detail in server logs, including underlying proof creation fetch errors.
-
 ## First-Time Use
 
 1. Open `http://localhost:3333/config`
@@ -72,3 +68,7 @@ http://localhost:3333
 - This is a transparent forwarding proxy, not a custom LLM server.
 - Requests and responses are not transformed except for optional default-model injection.
 - Runtime config and history are stored in PostgreSQL.
+
+`CONFIG_ENCRYPTION_KEY` is used to encrypt the saved Integritas API key in the database. Keep it stable across restarts if you want previously saved encrypted values to remain readable.
+
+`DEBUG_MODE=true` enables extra error detail in server logs, including underlying proof creation fetch errors.
