@@ -37,24 +37,24 @@ docker compose up -d --build
 3. Open the app:
 
 ```text
-http://localhost:3333/
+http://localhost:3334/
 ```
 
 ## First-Time Use
 
-1. Open `http://localhost:3333/config`
+1. Open `http://localhost:3334/config`
 2. Select a provider
 3. Enter the provider API key
 4. Refresh/select a model if needed
 5. Save config
-6. Run a live test in `http://localhost:3333/testing`
+6. Run a live test in `http://localhost:3334/testing`
 
 ## Client Setup
 
 Once the proxy is running, point your tools at:
 
 ```text
-http://localhost:3333
+http://localhost:3334
 ```
 
 ### Supported tools

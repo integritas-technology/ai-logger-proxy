@@ -4,7 +4,7 @@ const path = require("path");
 const { providerPresets } = require("./providers");
 
 function getPort() {
-  return Number.parseInt(process.env.PORT || "3333", 10);
+  return Number.parseInt(process.env.PORT || "3334", 10);
 }
 
 function getDatabaseUrl() {

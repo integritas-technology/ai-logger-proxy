@@ -11,7 +11,7 @@ function renderSetupPage() {
         <div>
           <div class="eyebrow">Client setup</div>
           <h1>Connect tools to the proxy</h1>
-          <p>Point local clients at <code>http://localhost:3333</code> after the provider is configured.</p>
+          <p>Point local clients at <code>http://localhost:3334</code> after the provider is configured.</p>
         </div>
       </section>
       <section class="panel stack">
@@ -31,11 +31,11 @@ function renderSetupPage() {
             <pre>1. Open your Codex config.
 2. Set the ChatGPT base URL to the proxy.
 
-chatgpt_base_url = "http://localhost:3333"</pre>
+chatgpt_base_url = "http://localhost:3334"</pre>
           </div>
           <div class="callout">
             <strong>Proxy base URL</strong>
-            <pre>http://localhost:3333</pre>
+            <pre>http://localhost:3334</pre>
           </div>
         </div>
         <div class="setup-instructions hidden" data-setup-tool-panel="opencode">
@@ -54,7 +54,7 @@ Example opencode.json:
       "npm": "@ai-sdk/openai-compatible",
       "name": "AI Logger Proxy",
       "options": {
-        "baseURL": "http://localhost:3333/v1"
+        "baseURL": "http://localhost:3334/v1"
       },
       "models": {
         "gpt-4.1-mini": {
@@ -69,7 +69,7 @@ Example opencode.json:
         <div class="setup-instructions hidden" data-setup-tool-panel="openai-compatible">
           <div class="callout">
             <strong>Claude Code or other OpenAI-compatible clients</strong>
-            <pre>Base URL: http://localhost:3333
+            <pre>Base URL: http://localhost:3334
 Route example: /v1/chat/completions</pre>
           </div>
         </div>

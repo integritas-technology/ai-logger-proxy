@@ -548,6 +548,28 @@ code {
   text-align: center;
 }
 
+.workflow-section {
+  display: grid;
+  gap: 14px;
+}
+
+.workflow-heading {
+  display: grid;
+  gap: 0;
+  justify-items: start;
+  padding: 0 2px;
+}
+
+.workflow-heading .eyebrow {
+  margin-bottom: 6px;
+}
+
+.workflow-heading h2 {
+  margin: 0;
+  font-size: 1.18rem;
+  line-height: 1.2;
+}
+
 .workflow-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

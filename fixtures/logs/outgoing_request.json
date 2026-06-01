@@ -2,9 +2,9 @@
   "method": "POST",
   "target": "https://api.openai.com/v1/responses",
   "headers": {
-    "x-forwarded-host": "localhost:3333",
+    "x-forwarded-host": "localhost:3334",
     "x-forwarded-proto": "http",
-    "x-forwarded-port": "3333",
+    "x-forwarded-port": "3334",
     "x-forwarded-for": "[redacted]",
     "host": "api.openai.com",
     "originator": "codex_vscode",
