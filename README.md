@@ -2,6 +2,8 @@
 
 A local reverse proxy for LLM traffic with a browser admin UI and PostgreSQL-backed storage for runtime config and request history.
 
+For a stakeholder overview, end-to-end user stories, and scope sign-off, see [Capabilities and user stories](docs/capabilities-and-user-stories.md).
+
 It listens on `localhost`, forwards supported API requests to the currently selected upstream provider, and stores config plus AI communication history in PostgreSQL.
 
 ## What It Does
@@ -62,6 +64,8 @@ http://localhost:3334
 - Codex
 - OpenCode Desktop
 - Claude Code and Other OpenAI-Compatible Clients
+
+The Connect page loads your saved provider and default model. Its OpenCode Desktop example uses that exact model ID, sets it as OpenCode's default, and selects the matching API adapter. Save a model on Configure before copying the example; after changing providers or models, reopen Connect and update your client configuration. Client-supplied API credentials take precedence over the proxy's saved key, so use a valid provider key when connecting OpenCode.
 
 ## Notes
 

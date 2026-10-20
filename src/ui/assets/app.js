@@ -791,7 +791,35 @@ async function loadHistoryPage() {
   await refreshHistory();
 }
 
-function loadSetupPage() {
+function buildOpenCodeSetup(config, proxyBaseUrl) {
+  const model = config.defaultModel;
+  const providerLabel = config.providerLabel || config.provider;
+  const example = {
+    $schema: 'https://opencode.ai/config.json',
+    model: `ai-logger-proxy/${model}`,
+    provider: {
+      'ai-logger-proxy': {
+        npm: config.provider === 'anthropic' ? '@ai-sdk/anthropic' : '@ai-sdk/openai-compatible',
+        name: `AI Logger Proxy (${providerLabel})`,
+        options: { baseURL: `${proxyBaseUrl}/v1` },
+        models: { [model]: { name: model } }
+      }
+    }
+  };
+
+  return `1. In OpenCode, run /connect and choose Other.
+2. Use the provider id ai-logger-proxy.
+3. Enter a valid ${providerLabel} API key. Do not use a placeholder: client credentials take precedence over the proxy's saved key.
+4. Merge the following into opencode.json.
+5. Select ai-logger-proxy/${model} in OpenCode.
+
+Example opencode.json:
+${formatJson(example)}
+
+After changing the saved provider or model, reopen Connect and update OpenCode with the new example.`;
+}
+
+async function loadSetupPage() {
   const toolSelect = document.getElementById('setup-tool');
   if (!toolSelect) {
     return;
@@ -807,6 +835,36 @@ function loadSetupPage() {
 
   toolSelect.addEventListener('change', updateSetupPanel);
   updateSetupPanel();
+
+  const status = document.getElementById('setup-config-status');
+  const openCodeInstructions = document.getElementById('setup-opencode-instructions');
+  const compatibleInstructions = document.getElementById('setup-compatible-instructions');
+
+  try {
+    const response = await fetch('/__admin/config');
+    const result = await response.json();
+    if (!response.ok || !result.config) {
+      throw new Error('Could not load saved configuration. Reload Connect to try again.');
+    }
+
+    const config = result.config;
+    const proxyBaseUrl = window.location.origin;
+    const providerLabel = config.providerLabel || config.provider;
+    const model = config.defaultModel;
+    setStatus(status, `Saved provider: ${providerLabel}. Model: ${model || 'No default selected'}.`);
+    openCodeInstructions.textContent = model
+      ? buildOpenCodeSetup(config, proxyBaseUrl)
+      : 'Select a default model on the Configure page and save it, then reopen Connect to generate your OpenCode configuration.';
+    compatibleInstructions.textContent = `Provider: ${providerLabel}
+Base URL: ${proxyBaseUrl}/v1
+Route example: ${config.provider === 'anthropic' ? '/v1/messages' : '/v1/chat/completions'}
+Model: ${model || 'Select and save a model on the Configure page.'}
+${config.provider === 'anthropic' ? 'Use a client that sends Anthropic Messages requests.' : 'Use a client that sends OpenAI-compatible requests.'}`;
+  } catch (error) {
+    setStatus(status, 'Could not load saved configuration. Reload Connect to try again.', true);
+    openCodeInstructions.textContent = 'Instructions unavailable until saved configuration can be loaded.';
+    compatibleInstructions.textContent = 'Instructions unavailable until saved configuration can be loaded.';
+  }
 }
 
 window.addEventListener('DOMContentLoaded', () => {

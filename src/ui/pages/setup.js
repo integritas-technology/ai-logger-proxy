@@ -17,6 +17,7 @@ function renderSetupPage() {
       <section class="panel stack">
         <div class="setup-note">
           <p>OpenAI and OpenRouter use OpenAI-style routes. Anthropic requests are forwarded with Anthropic auth headers and versioning, but this proxy does not translate OpenAI payloads into Anthropic message format.</p>
+          <p id="setup-config-status" role="status">Loading saved provider and model...</p>
         </div>
         <label class="setup-tool-select">AI tool
           <select id="setup-tool">
@@ -41,36 +42,13 @@ chatgpt_base_url = "http://localhost:3334"</pre>
         <div class="setup-instructions hidden" data-setup-tool-panel="opencode">
           <div class="callout">
             <strong>OpenCode Desktop</strong>
-            <pre>1. Add a credential in OpenCode with /connect and choose Other.
-2. Use a provider id such as ai-logger-proxy.
-3. Point the provider baseURL at the proxy.
-4. Add at least one model entry under models.
-
-Example opencode.json:
-{
-  "$schema": "https://opencode.ai/config.json",
-  "provider": {
-    "ai-logger-proxy": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "AI Logger Proxy",
-      "options": {
-        "baseURL": "http://localhost:3334/v1"
-      },
-      "models": {
-        "gpt-4.1-mini": {
-          "name": "Proxy Model"
-        }
-      }
-    }
-  }
-}</pre>
+            <pre id="setup-opencode-instructions">Loading instructions from saved configuration...</pre>
           </div>
         </div>
         <div class="setup-instructions hidden" data-setup-tool-panel="openai-compatible">
           <div class="callout">
             <strong>Claude Code or other OpenAI-compatible clients</strong>
-            <pre>Base URL: http://localhost:3334
-Route example: /v1/chat/completions</pre>
+            <pre id="setup-compatible-instructions">Loading instructions from saved configuration...</pre>
           </div>
         </div>
         <div class="callout">
